@@ -1,17 +1,89 @@
 <!DOCTYPE html>
 <html lang="en">
-<head><link rel="manifest" href="manifest.json"><script>if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js")</script><link rel="manifest" href="manifest.json"><script>if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js")</script><link rel="manifest" href="manifest.json"><script>if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js")</script><link rel="manifest" href="manifest.json"><script>if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js")</script>
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Resume Builder JSON - Create Professional Resumes</title>
+    <link rel="manifest" href="manifest.json">
+    <script>if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js")</script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            /* Light theme (default) */
+            --bg-primary: #11998e;
+            --bg-secondary: #38ef7d;
+            --bg-gradient: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            --panel-bg: white;
+            --panel-text: #1f2937;
+            --panel-border: #e5e7eb;
+            --input-bg: white;
+            --input-text: #1f2937;
+            --input-border: #e5e7eb;
+            --input-focus: #11998e;
+            --resume-preview-bg: #fafafa;
+            --header-text: white;
+            --resume-header-border: #11998e;
+            --resume-section-title: #11998e;
+            --resume-text: #4b5563;
+            --json-bg: #1f2937;
+            --json-text: #10b981;
+            --shadow: rgba(0,0,0,0.2);
+            --btn-secondary-bg: #f3f4f6;
+            --btn-secondary-text: #4b5563;
+        }
+        
+        [data-theme="dark"] {
+            --bg-primary: #0f766e;
+            --bg-secondary: #059669;
+            --bg-gradient: linear-gradient(135deg, #0f766e 0%, #059669 100%);
+            --panel-bg: #1f2937;
+            --panel-text: #f9fafb;
+            --panel-border: #374151;
+            --input-bg: #111827;
+            --input-text: #f9fafb;
+            --input-border: #374151;
+            --input-focus: #10b981;
+            --resume-preview-bg: #111827;
+            --header-text: #f9fafb;
+            --resume-header-border: #10b981;
+            --resume-section-title: #34d399;
+            --resume-text: #d1d5db;
+            --json-bg: #0f172a;
+            --json-text: #34d399;
+            --shadow: rgba(0,0,0,0.5);
+            --btn-secondary-bg: #374151;
+            --btn-secondary-text: #d1d5db;
+        }
+        
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            background: var(--bg-gradient);
             min-height: 100vh;
             padding: 20px;
+            transition: background 0.3s ease;
+        }
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1.5em;
+            transition: all 0.3s ease;
+            border: 2px solid rgba(255,255,255,0.3);
+            z-index: 1000;
+        }
+        .theme-toggle:hover {
+            transform: scale(1.1);
+            background: rgba(255,255,255,0.3);
         }
         .container {
             max-width: 1000px;
@@ -19,7 +91,7 @@
         }
         header {
             text-align: center;
-            color: white;
+            color: var(--header-text);
             padding: 40px 0;
         }
         header h1 { font-size: 2.5em; margin-bottom: 10px; }
@@ -30,14 +102,15 @@
             gap: 20px;
         }
         .editor-panel {
-            background: white;
+            background: var(--panel-bg);
             border-radius: 16px;
             padding: 25px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            box-shadow: 0 20px 40px var(--shadow);
+            transition: background 0.3s ease, box-shadow 0.3s ease;
         }
         .editor-panel h2 {
             margin-bottom: 20px;
-            color: #1f2937;
+            color: var(--panel-text);
             font-size: 1.3em;
         }
         .form-group {
@@ -46,24 +119,27 @@
         .form-group label {
             display: block;
             margin-bottom: 5px;
-            color: #4b5563;
+            color: var(--panel-text);
             font-weight: 500;
             font-size: 0.9em;
+            opacity: 0.9;
         }
         .form-group input,
         .form-group textarea {
             width: 100%;
             padding: 10px 12px;
-            border: 2px solid #e5e7eb;
+            background: var(--input-bg);
+            color: var(--input-text);
+            border: 2px solid var(--input-border);
             border-radius: 8px;
             font-family: inherit;
             font-size: 0.95em;
-            transition: border-color 0.2s;
+            transition: all 0.2s;
         }
         .form-group input:focus,
         .form-group textarea:focus {
             outline: none;
-            border-color: #11998e;
+            border-color: var(--input-focus);
         }
         .form-group textarea {
             min-height: 80px;
@@ -76,73 +152,80 @@
             font-size: 1em;
             font-weight: 600;
             cursor: pointer;
-            transition: transform 0.2s;
+            transition: all 0.2s;
             width: 100%;
             margin-top: 10px;
         }
         .btn:hover { transform: translateY(-2px); }
+        .btn:active { transform: translateY(0); }
         .btn-primary {
-            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
             color: white;
         }
         .btn-secondary {
-            background: #f3f4f6;
-            color: #4b5563;
+            background: var(--btn-secondary-bg);
+            color: var(--btn-secondary-text);
+        }
+        .btn-danger {
+            background: #ef4444;
+            color: white;
         }
         .preview-panel {
-            background: white;
+            background: var(--panel-bg);
             border-radius: 16px;
             padding: 25px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            box-shadow: 0 20px 40px var(--shadow);
+            transition: background 0.3s ease, box-shadow 0.3s ease;
         }
         .preview-panel h2 {
             margin-bottom: 20px;
-            color: #1f2937;
+            color: var(--panel-text);
             font-size: 1.3em;
         }
         .resume-preview {
-            background: #fafafa;
-            border: 1px solid #e5e7eb;
+            background: var(--resume-preview-bg);
+            border: 1px solid var(--panel-border);
             border-radius: 8px;
             padding: 30px;
             min-height: 500px;
             font-size: 0.9em;
+            transition: all 0.3s ease;
         }
         .resume-header {
             text-align: center;
             padding-bottom: 20px;
-            border-bottom: 2px solid #11998e;
+            border-bottom: 2px solid var(--resume-header-border);
             margin-bottom: 20px;
         }
         .resume-header h1 {
             font-size: 1.8em;
-            color: #1f2937;
+            color: var(--panel-text);
             margin-bottom: 5px;
         }
         .resume-header p {
-            color: #6b7280;
+            color: var(--resume-text);
         }
         .resume-section {
             margin-bottom: 20px;
         }
         .resume-section h3 {
-            color: #11998e;
+            color: var(--resume-section-title);
             font-size: 1.1em;
             margin-bottom: 10px;
             text-transform: uppercase;
             letter-spacing: 1px;
         }
         .resume-section p {
-            color: #4b5563;
+            color: var(--resume-text);
             line-height: 1.6;
             margin-bottom: 8px;
         }
         .json-output {
-            background: #1f2937;
-            color: #10b981;
+            background: var(--json-bg);
+            color: var(--json-text);
             padding: 20px;
             border-radius: 8px;
-            font-family: 'Monaco', monospace;
+            font-family: 'Monaco', 'Consolas', monospace;
             font-size: 0.85em;
             overflow-x: auto;
             margin-top: 20px;
@@ -151,17 +234,99 @@
         }
         footer {
             text-align: center;
-            color: white;
+            color: var(--header-text);
             padding: 30px;
             opacity: 0.8;
         }
-        footer a { color: white; }
+        footer a { color: var(--header-text); }
+        
+        /* Action buttons container */
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .action-buttons .btn {
+            margin-top: 0;
+        }
+        .action-buttons .btn-full {
+            grid-column: 1 / -1;
+        }
+        
+        /* Print styles */
+        @media print {
+            body { background: white !important; padding: 0; }
+            .theme-toggle, .editor-panel, footer, .action-buttons, .json-output, h3 { display: none !important; }
+            .preview-panel { box-shadow: none; }
+            .resume-preview { border: none; }
+        }
+        
         @media (max-width: 768px) {
             .builder { grid-template-columns: 1fr; }
+            .theme-toggle { top: 10px; right: 10px; width: 40px; height: 40px; font-size: 1.2em; }
+            header h1 { font-size: 1.8em; }
+            header { padding: 30px 0; }
         }
+        
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #1f2937;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 500;
+            z-index: 1000;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+        .toast.success { background: #10b981; }
+        .toast.error { background: #ef4444; }
+        
+        /* Keyboard shortcuts hint */
+        .shortcuts-hint {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.75em;
+            opacity: 0;
+            transition: opacity 0.3s;
+            cursor: pointer;
+        }
+        .shortcuts-hint:hover { opacity: 1; }
+        .shortcuts-hint.visible { opacity: 0.7; }
+        
+        /* Loading spinner for PDF */
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #ffffff;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-left: 8px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
+    <div class="theme-toggle" id="themeToggle" title="Toggle theme (T)">
+        <span id="themeIcon">🌙</span>
+    </div>
+    
     <div class="container">
         <header>
             <h1>📄 Resume Builder JSON</h1>
@@ -174,58 +339,74 @@
                 
                 <div class="form-group">
                     <label>Full Name</label>
-                    <input type="text" id="fullName" placeholder="John Doe" oninput="updateResume()">
+                    <input type="text" id="fullName" placeholder="John Doe">
                 </div>
                 
                 <div class="form-group">
                     <label>Job Title</label>
-                    <input type="text" id="jobTitle" placeholder="Software Engineer" oninput="updateResume()">
+                    <input type="text" id="jobTitle" placeholder="Software Engineer">
                 </div>
                 
                 <div class="form-group">
                     <label>Email</label>
-                    <input type="email" id="email" placeholder="john@example.com" oninput="updateResume()">
+                    <input type="email" id="email" placeholder="john@example.com">
                 </div>
                 
                 <div class="form-group">
                     <label>Phone</label>
-                    <input type="tel" id="phone" placeholder="+1 234 567 890" oninput="updateResume()">
+                    <input type="tel" id="phone" placeholder="+1 234 567 890">
                 </div>
                 
                 <div class="form-group">
                     <label>Summary</label>
-                    <textarea id="summary" placeholder="Brief professional summary..." oninput="updateResume()"></textarea>
+                    <textarea id="summary" placeholder="Brief professional summary..."></textarea>
                 </div>
                 
                 <div class="form-group">
                     <label>Experience</label>
-                    <textarea id="experience" placeholder="Job Title - Company (Year)&#10;Description..." oninput="updateResume()"></textarea>
+                    <textarea id="experience" placeholder="Job Title - Company (Year)
+Description..."></textarea>
                 </div>
                 
                 <div class="form-group">
                     <label>Education</label>
-                    <textarea id="education" placeholder="Degree - University (Year)" oninput="updateResume()"></textarea>
+                    <textarea id="education" placeholder="Degree - University (Year)"></textarea>
                 </div>
                 
                 <div class="form-group">
                     <label>Skills (comma separated)</label>
-                    <input type="text" id="skills" placeholder="JavaScript, Python, React, Node.js" oninput="updateResume()">
+                    <input type="text" id="skills" placeholder="JavaScript, Python, React, Node.js">
                 </div>
                 
-                <button class="btn btn-primary" onclick="downloadJSON()">💾 Download JSON</button>
-                <button class="btn btn-secondary" onclick="loadExample()">📋 Load Example</button>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="downloadJSON()" title="Ctrl+S">
+                        💾 Save JSON
+                    </button>
+                    <button class="btn btn-secondary" onclick="loadExample()">
+                        📋 Load Example
+                    </button>
+                    <button class="btn btn-secondary" onclick="importJSON()">
+                        📁 Import JSON
+                    </button>
+                    <button class="btn btn-secondary" onclick="printResume()" title="Ctrl+P">
+                        🖨️ Print/PDF
+                    </button>
+                    <button class="btn btn-danger" onclick="clearAll()">
+                        🗑️ Clear All
+                    </button>
+                </div>
             </div>
             
             <div class="preview-panel">
-                <h2>👁️ Preview</h2>
+                <h2>👁️ Live Preview</h2>
                 
                 <div class="resume-preview" id="resumePreview">
-                    <div style="text-align: center; color: #9ca3af; padding: 50px 0;">
+                    <div style="text-align: center; color: var(--resume-text); padding: 50px 0;">
                         Fill in the form to see your resume preview
                     </div>
                 </div>
                 
-                <h3 style="margin-top: 20px; color: #1f2937;">JSON Output:</h3>
+                <h3 style="margin-top: 20px; color: var(--panel-text);">JSON Output:</h3>
                 <div class="json-output" id="jsonOutput">{
   "message": "Fill in the form to generate JSON"
 }</div>
@@ -237,31 +418,78 @@
         </footer>
     </div>
     
+    <div class="shortcuts-hint" id="shortcutsHint" title="Click to see all shortcuts">
+        ⌨️ Ctrl+S Save · Ctrl+P Print · T Theme
+    </div>
+    
+    <div class="toast" id="toast"></div>
+    
     <script>
+        // Theme management
+        const themeToggle = document.getElementById('themeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+        
+        // Load saved theme or use system preference
+        const savedTheme = localStorage.getItem('resume-builder-theme');
+        const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        
+        function setTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            themeIcon.textContent = theme === 'dark' ? '☀️' : '🌙';
+            themeToggle.title = theme === 'dark' ? 'Switch to light theme (T)' : 'Switch to dark theme (T)';
+            localStorage.setItem('resume-builder-theme', theme);
+        }
+        
+        if (savedTheme) {
+            setTheme(savedTheme);
+        } else if (systemDark) {
+            setTheme('dark');
+        }
+        
+        themeToggle.addEventListener('click', () => {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            setTheme(currentTheme === 'dark' ? 'light' : 'dark');
+        });
+        
+        // Data management
+        const getFormData = () => ({
+            fullName: document.getElementById('fullName').value,
+            jobTitle: document.getElementById('jobTitle').value,
+            email: document.getElementById('email').value,
+            phone: document.getElementById('phone').value,
+            summary: document.getElementById('summary').value,
+            experience: document.getElementById('experience').value,
+            education: document.getElementById('education').value,
+            skills: document.getElementById('skills').value.split(',').map(s => s.trim()).filter(s => s)
+        });
+        
+        const setFormData = (data) => {
+            document.getElementById('fullName').value = data.fullName || '';
+            document.getElementById('jobTitle').value = data.jobTitle || '';
+            document.getElementById('email').value = data.email || '';
+            document.getElementById('phone').value = data.phone || '';
+            document.getElementById('summary').value = data.summary || '';
+            document.getElementById('experience').value = data.experience || '';
+            document.getElementById('education').value = data.education || '';
+            document.getElementById('skills').value = Array.isArray(data.skills) ? data.skills.join(', ') : (data.skills || '');
+        };
+        
+        // Update preview
         function updateResume() {
-            const data = {
-                fullName: document.getElementById('fullName').value,
-                jobTitle: document.getElementById('jobTitle').value,
-                email: document.getElementById('email').value,
-                phone: document.getElementById('phone').value,
-                summary: document.getElementById('summary').value,
-                experience: document.getElementById('experience').value,
-                education: document.getElementById('education').value,
-                skills: document.getElementById('skills').value.split(',').map(s => s.trim()).filter(s => s)
-            };
+            const data = getFormData();
             
-            // Update preview
+            // Build preview HTML
             let previewHTML = '';
             
             if (data.fullName) {
                 previewHTML += `
                     <div class="resume-header">
-                        <h1>${data.fullName}</h1>
-                        ${data.jobTitle ? `\u003cp\u003e${data.jobTitle}\u003c/p\u003e` : ''}
-                        <p style="margin-top: 10px;">
-                            ${data.email ? `📧 ${data.email}` : ''}
-                            ${data.phone ? ` | 📱 ${data.phone}` : ''}
-                        </p\u003e
+                        <h1>${escapeHtml(data.fullName)}</h1>
+                        ${data.jobTitle ? `<p>${escapeHtml(data.jobTitle)}</p>` : ''}
+                        <p style="margin-top: 10px; font-size: 0.9em;">
+                            ${data.email ? `📧 ${escapeHtml(data.email)}` : ''}
+                            ${data.phone ? (data.email ? ' | ' : '') + `📱 ${escapeHtml(data.phone)}` : ''}
+                        </p>
                     </div>
                 `;
             }
@@ -270,7 +498,7 @@
                 previewHTML += `
                     <div class="resume-section">
                         <h3>Summary</h3>
-                        <p>${data.summary}\u003c/p\u003e
+                        <p>${escapeHtml(data.summary)}</p>
                     </div>
                 `;
             }
@@ -279,7 +507,7 @@
                 previewHTML += `
                     <div class="resume-section">
                         <h3>Experience</h3>
-                        <p>${data.experience.replace(/\n/g, '\u003cbr\u003e')}\u003c/p\u003e
+                        <p>${escapeHtml(data.experience).replace(/\n/g, '<br>')}</p>
                     </div>
                 `;
             }
@@ -288,7 +516,7 @@
                 previewHTML += `
                     <div class="resume-section">
                         <h3>Education</h3>
-                        <p>${data.education.replace(/\n/g, '\u003cbr\u003e')}\u003c/p\u003e
+                        <p>${escapeHtml(data.education).replace(/\n/g, '<br>')}</p>
                     </div>
                 `;
             }
@@ -297,1593 +525,161 @@
                 previewHTML += `
                     <div class="resume-section">
                         <h3>Skills</h3>
-                        <p>${data.skills.join(' • ')}\u003c/p\u003e
+                        <p>${data.skills.map(s => escapeHtml(s)).join(' • ')}</p>
                     </div>
                 `;
             }
             
             if (previewHTML) {
                 document.getElementById('resumePreview').innerHTML = previewHTML;
+            } else {
+                document.getElementById('resumePreview').innerHTML = `
+                    <div style="text-align: center; color: var(--resume-text); padding: 50px 0;">
+                        Fill in the form to see your resume preview
+                    </div>
+                `;
             }
             
             // Update JSON output
             document.getElementById('jsonOutput').textContent = JSON.stringify(data, null, 2);
+            
+            // Auto-save to localStorage
+            localStorage.setItem('resume-builder-data', JSON.stringify(data));
         }
         
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Real-time updates
+        document.querySelectorAll('input, textarea').forEach(el => {
+            el.addEventListener('input', updateResume);
+        });
+        
+        // Download JSON
         function downloadJSON() {
-            const data = {
-                fullName: document.getElementById('fullName').value,
-                jobTitle: document.getElementById('jobTitle').value,
-                email: document.getElementById('email').value,
-                phone: document.getElementById('phone').value,
-                summary: document.getElementById('summary').value,
-                experience: document.getElementById('experience').value,
-                education: document.getElementById('education').value,
-                skills: document.getElementById('skills').value.split(',').map(s => s.trim()).filter(s => s)
-            };
-            
+            const data = getFormData();
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'resume.json';
+            a.download = `resume-${(data.fullName || 'untitled').toLowerCase().replace(/\s+/g, '-')}.json`;
+            document.body.appendChild(a);
             a.click();
+            document.body.removeChild(a);
             URL.revokeObjectURL(url);
+            showToast('JSON downloaded successfully! 💾', 'success');
         }
         
-        function loadExample() {
-            document.getElementById('fullName').value = 'Jane Smith';
-            document.getElementById('jobTitle').value = 'Senior Software Engineer';
-            document.getElementById('email').value = 'jane.smith@example.com';
-            document.getElementById('phone').value = '+1 (555) 123-4567';
-            document.getElementById('summary').value = 'Experienced software engineer with 8+ years in full-stack development. Passionate about clean code, scalable architecture, and mentoring junior developers.';
-            document.getElementById('experience').value = 'Senior Software Engineer - Tech Corp (2020-Present)\n• Led team of 5 developers in building microservices architecture\n• Reduced application load time by 40% through optimization\n\nSoftware Engineer - Startup Inc (2017-2020)\n• Built RESTful APIs serving 1M+ daily requests\n• Implemented CI/CD pipeline reducing deployment time by 60%';
-            document.getElementById('education').value = 'M.S. Computer Science - Stanford University (2017)\nB.S. Computer Science - MIT (2015)';
-            document.getElementById('skills').value = 'JavaScript, Python, React, Node.js, AWS, Docker, Kubernetes, PostgreSQL';
-            
-            updateResume();
+        // Import JSON
+        function importJSON() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json,application/json';
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const data = JSON.parse(event.target.result);
+                        setFormData(data);
+                        updateResume();
+                        showToast('Resume imported successfully! 📁', 'success');
+                    } catch (err) {
+                        showToast('Invalid JSON file! ❌', 'error');
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
         }
+        
+        // Print/PDF export
+        function printResume() {
+            const data = getFormData();
+            if (!data.fullName) {
+                showToast('Please add at least your name first! 📝', 'error');
+                return;
+            }
+            window.print();
+        }
+        
+        // Clear all
+        function clearAll() {
+            if (confirm('Are you sure you want to clear all data? This cannot be undone.')) {
+                document.querySelectorAll('input, textarea').forEach(el => el.value = '');
+                updateResume();
+                localStorage.removeItem('resume-builder-data');
+                showToast('All data cleared! 🗑️', 'success');
+            }
+        }
+        
+        // Load example
+        function loadExample() {
+            setFormData({
+                fullName: 'Jane Smith',
+                jobTitle: 'Senior Software Engineer',
+                email: 'jane.smith@example.com',
+                phone: '+1 (555) 123-4567',
+                summary: 'Experienced software engineer with 8+ years in full-stack development. Passionate about clean code, scalable architecture, and mentoring junior developers.',
+                experience: 'Senior Software Engineer - Tech Corp (2020-Present)\n• Led team of 5 developers in building microservices architecture\n• Reduced application load time by 40% through optimization\n\nSoftware Engineer - Startup Inc (2017-2020)\n• Built RESTful APIs serving 1M+ daily requests\n• Implemented CI/CD pipeline reducing deployment time by 60%',
+                education: 'M.S. Computer Science - Stanford University (2017)\nB.S. Computer Science - MIT (2015)',
+                skills: ['JavaScript', 'Python', 'React', 'Node.js', 'AWS', 'Docker', 'Kubernetes', 'PostgreSQL']
+            });
+            updateResume();
+            showToast('Example loaded! 📋', 'success');
+        }
+        
+        // Toast notification
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type} show`;
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key.toLowerCase()) {
+                    case 's':
+                        e.preventDefault();
+                        downloadJSON();
+                        break;
+                    case 'p':
+                        e.preventDefault();
+                        printResume();
+                        break;
+                }
+            } else if (e.key.toLowerCase() === 't' && !e.ctrlKey && !e.metaKey && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+                themeToggle.click();
+            }
+        });
+        
+        // Show shortcuts hint after a delay
+        setTimeout(() => {
+            document.getElementById('shortcutsHint').classList.add('visible');
+        }, 2000);
+        
+        // Load saved data on startup
+        const savedData = localStorage.getItem('resume-builder-data');
+        if (savedData) {
+            try {
+                const data = JSON.parse(savedData);
+                setFormData(data);
+                updateResume();
+            } catch (e) {
+                console.error('Failed to load saved data');
+            }
+        }
+        
+        // Initial render
+        updateResume();
     </script>
 </body>
 </html>
-<script>
-// Offline indicator
-const offlineIndicator = document.createElement('div');
-offlineIndicator.textContent = '⚠️ Offline';
-offlineIndicator.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#ff6b6b;color:white;text-align:center;padding:5px;display:none;';
-document.body.appendChild(offlineIndicator);
-window.addEventListener('online', () => offlineIndicator.style.display = 'none');
-window.addEventListener('offline', () => offlineIndicator.style.display = 'block');
-</script>
-<style>
-@media (max-width: 768px) {
-    .container { padding: 10px; }
-    h1 { font-size: 1.5rem; }
-    button { width: 100%; margin: 5px 0; }
-}
-</style>
-<script>
-// Keyboard shortcuts
-document.addEventListener('keydown', (e) => {
-    if (e.ctrlKey || e.metaKey) {
-        switch(e.key) {
-            case 's': e.preventDefault(); console.log('Save shortcut'); break;
-            case 'r': e.preventDefault(); location.reload(); break;
-            case 'f': e.preventDefault(); document.querySelector('input')?.focus(); break;
-        }
-    }
-});
-</script>
-<script>
-// Auto-save to localStorage
-const saveKey = 'app-data-' + location.pathname;
-const saveData = () => {
-    const data = { timestamp: Date.now(), inputs: {} };
-    document.querySelectorAll('input, textarea').forEach(el => {
-        data.inputs[el.id || el.name] = el.value;
-    });
-    localStorage.setItem(saveKey, JSON.stringify(data));
-};
-const loadData = () => {
-    const saved = localStorage.getItem(saveKey);
-    if (saved) {
-        const data = JSON.parse(saved);
-        Object.entries(data.inputs).forEach(([key, value]) => {
-            const el = document.getElementById(key) || document.querySelector('[name="' + key + '"]');
-            if (el) el.value = value;
-        });
-    }
-};
-document.addEventListener('input', saveData);
-document.addEventListener('DOMContentLoaded', loadData);
-</script>
-<script>
-// Request notification permission
-if ('Notification' in window && Notification.permission === 'default') {
-    Notification.requestPermission();
-}
-function notify(title, body) {
-    if (Notification.permission === 'granted') {
-        new Notification(title, { body });
-    }
-}
-</script>
-<script>
-// Import from file
-const importBtn = document.createElement('button');
-importBtn.textContent = '📁 Import';
-importBtn.onclick = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.onchange = (e) => {
-        const file = e.target.files[0];
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const textArea = document.querySelector('textarea');
-            if (textArea) textArea.value = e.target.result;
-        };
-        reader.readAsText(file);
-    };
-    input.click();
-};
-document.querySelector('.container')?.appendChild(importBtn);
-</script>
-<script>
-// Simple tutorial
-const tutorialSteps = [
-    { selector: 'h1', text: 'Welcome! This is the main title.' },
-    { selector: 'button', text: 'Click here to perform actions.' }
-];
-let currentStep = 0;
-function showTutorial() {
-    if (currentStep < tutorialSteps.length) {
-        const step = tutorialSteps[currentStep];
-        const el = document.querySelector(step.selector);
-        if (el) {
-            const tooltip = document.createElement('div');
-            tooltip.textContent = step.text;
-            tooltip.style.cssText = 'position:absolute;background:#6f42c1;color:white;padding:10px;border-radius:5px;z-index:1000;';
-            el.style.position = 'relative';
-            el.appendChild(tooltip);
-            setTimeout(() => tooltip.remove(), 3000);
-        }
-        currentStep++;
-    }
-}
-// Show tutorial on first visit
-if (!localStorage.getItem('tutorial-shown')) {
-    setTimeout(showTutorial, 1000);
-    localStorage.setItem('tutorial-shown', 'true');
-}
-</script>
-<script>
-// Auto-save to localStorage
-const saveKey = 'app-data-' + location.pathname;
-const saveData = () => {
-    const data = { timestamp: Date.now(), inputs: {} };
-    document.querySelectorAll('input, textarea').forEach(el => {
-        data.inputs[el.id || el.name] = el.value;
-    });
-    localStorage.setItem(saveKey, JSON.stringify(data));
-};
-const loadData = () => {
-    const saved = localStorage.getItem(saveKey);
-    if (saved) {
-        const data = JSON.parse(saved);
-        Object.entries(data.inputs).forEach(([key, value]) => {
-            const el = document.getElementById(key) || document.querySelector('[name="' + key + '"]');
-            if (el) el.value = value;
-        });
-    }
-};
-document.addEventListener('input', saveData);
-document.addEventListener('DOMContentLoaded', loadData);
-</script>
-<script>
-// Share functionality
-const shareBtn = document.createElement('button');
-shareBtn.textContent = '🔗 Share';
-shareBtn.style.cssText = 'position:fixed;bottom:20px;right:20px;padding:10px 20px;background:#6f42c1;color:white;border:none;border-radius:20px;cursor:pointer;';
-shareBtn.onclick = () => {
-    if (navigator.share) {
-        navigator.share({ title: document.title, url: location.href });
-    } else {
-        navigator.clipboard.writeText(location.href);
-        shareBtn.textContent = '✅ Copied!';
-        setTimeout(() => shareBtn.textContent = '🔗 Share', 2000);
-    }
-};
-document.body.appendChild(shareBtn);
-</script>
-<script>
-// Usage stats
-const stats = JSON.parse(localStorage.getItem('app-stats') || '{}');
-stats.visits = (stats.visits || 0) + 1;
-stats.lastVisit = new Date().toISOString();
-localStorage.setItem('app-stats', JSON.stringify(stats));
-console.log('Visits:', stats.visits);
-</script>
-<style>
-@media (max-width: 768px) {
-    .container { padding: 10px; }
-    h1 { font-size: 1.5rem; }
-    button { width: 100%; margin: 5px 0; }
-}
-</style>
-<script>
-// Auto-save to localStorage
-const saveKey = 'app-data-' + location.pathname;
-const saveData = () => {
-    const data = { timestamp: Date.now(), inputs: {} };
-    document.querySelectorAll('input, textarea').forEach(el => {
-        data.inputs[el.id || el.name] = el.value;
-    });
-    localStorage.setItem(saveKey, JSON.stringify(data));
-};
-const loadData = () => {
-    const saved = localStorage.getItem(saveKey);
-    if (saved) {
-        const data = JSON.parse(saved);
-        Object.entries(data.inputs).forEach(([key, value]) => {
-            const el = document.getElementById(key) || document.querySelector('[name="' + key + '"]');
-            if (el) el.value = value;
-        });
-    }
-};
-document.addEventListener('input', saveData);
-document.addEventListener('DOMContentLoaded', loadData);
-</script>
-<script>
-// Request notification permission
-if ('Notification' in window && Notification.permission === 'default') {
-    Notification.requestPermission();
-}
-function notify(title, body) {
-    if (Notification.permission === 'granted') {
-        new Notification(title, { body });
-    }
-}
-</script>
-<style>
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-.container { animation: fadeIn 0.3s ease-out; }
-button { transition: all 0.2s ease; }
-button:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
-</style>
-<script>
-// Usage stats
-const stats = JSON.parse(localStorage.getItem('app-stats') || '{}');
-stats.visits = (stats.visits || 0) + 1;
-stats.lastVisit = new Date().toISOString();
-localStorage.setItem('app-stats', JSON.stringify(stats));
-console.log('Visits:', stats.visits);
-</script>
-<style>
-@media (max-width: 768px) {
-    .container { padding: 10px; }
-    h1 { font-size: 1.5rem; }
-    button { width: 100%; margin: 5px 0; }
-}
-</style>
-<style>
-@media (max-width: 768px) {
-    .container { padding: 10px; }
-    h1 { font-size: 1.5rem; }
-    button { width: 100%; margin: 5px 0; }
-}
-</style>
-<script>
-// Import from file
-const importBtn = document.createElement('button');
-importBtn.textContent = '📁 Import';
-importBtn.onclick = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.onchange = (e) => {
-        const file = e.target.files[0];
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const textArea = document.querySelector('textarea');
-            if (textArea) textArea.value = e.target.result;
-        };
-        reader.readAsText(file);
-    };
-    input.click();
-};
-document.querySelector('.container')?.appendChild(importBtn);
-</script>
-<script>
-// Auto-save to localStorage
-const saveKey = 'app-data-' + location.pathname;
-const saveData = () => {
-    const data = { timestamp: Date.now(), inputs: {} };
-    document.querySelectorAll('input, textarea').forEach(el => {
-        data.inputs[el.id || el.name] = el.value;
-    });
-    localStorage.setItem(saveKey, JSON.stringify(data));
-};
-const loadData = () => {
-    const saved = localStorage.getItem(saveKey);
-    if (saved) {
-        const data = JSON.parse(saved);
-        Object.entries(data.inputs).forEach(([key, value]) => {
-            const el = document.getElementById(key) || document.querySelector('[name="' + key + '"]');
-            if (el) el.value = value;
-        });
-    }
-};
-document.addEventListener('input', saveData);
-document.addEventListener('DOMContentLoaded', loadData);
-</script>
-<script>
-// Offline indicator
-const offlineIndicator = document.createElement('div');
-offlineIndicator.textContent = '⚠️ Offline';
-offlineIndicator.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#ff6b6b;color:white;text-align:center;padding:5px;display:none;';
-document.body.appendChild(offlineIndicator);
-window.addEventListener('online', () => offlineIndicator.style.display = 'none');
-window.addEventListener('offline', () => offlineIndicator.style.display = 'block');
-</script>
-<script>
-// Request notification permission
-if ('Notification' in window && Notification.permission === 'default') {
-    Notification.requestPermission();
-}
-function notify(title, body) {
-    if (Notification.permission === 'granted') {
-        new Notification(title, { body });
-    }
-}
-</script>
-<style>
-@media (max-width: 768px) {
-    .container { padding: 10px; }
-    h1 { font-size: 1.5rem; }
-    button { width: 100%; margin: 5px 0; }
-}
-</style>
-<style>
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-.container { animation: fadeIn 0.3s ease-out; }
-button { transition: all 0.2s ease; }
-button:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
-</style>
-<script>
-// Keyboard shortcuts
-document.addEventListener('keydown', (e) => {
-    if (e.ctrlKey || e.metaKey) {
-        switch(e.key) {
-            case 's': e.preventDefault(); console.log('Save shortcut'); break;
-            case 'r': e.preventDefault(); location.reload(); break;
-            case 'f': e.preventDefault(); document.querySelector('input')?.focus(); break;
-        }
-    }
-});
-</script>
-<script>
-// Offline indicator
-const offlineIndicator = document.createElement('div');
-offlineIndicator.textContent = '⚠️ Offline';
-offlineIndicator.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#ff6b6b;color:white;text-align:center;padding:5px;display:none;';
-document.body.appendChild(offlineIndicator);
-window.addEventListener('online', () => offlineIndicator.style.display = 'none');
-window.addEventListener('offline', () => offlineIndicator.style.display = 'block');
-</script>
-<style>
-@media (max-width: 768px) {
-    .container { padding: 10px; }
-    h1 { font-size: 1.5rem; }
-    button { width: 100%; margin: 5px 0; }
-}
-</style>
-<style>
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-.container { animation: fadeIn 0.3s ease-out; }
-button { transition: all 0.2s ease; }
-button:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
-</style>
-<script>
-// Usage stats
-const stats = JSON.parse(localStorage.getItem('app-stats') || '{}');
-stats.visits = (stats.visits || 0) + 1;
-stats.lastVisit = new Date().toISOString();
-localStorage.setItem('app-stats', JSON.stringify(stats));
-console.log('Visits:', stats.visits);
-</script>
-<style>
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-.container { animation: fadeIn 0.3s ease-out; }
-button { transition: all 0.2s ease; }
-button:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
-</style>
-<script>
-// Undo/Redo history
-const history = { past: [], future: [] };
-const saveState = () => {
-    const state = document.querySelector('textarea, input')?.value;
-    if (state) history.past.push(state);
-};
-document.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-        e.preventDefault();
-        if (e.shiftKey && history.future.length) {
-            // Redo
-            const state = history.future.pop();
-            history.past.push(document.querySelector('textarea, input')?.value);
-            if (document.querySelector('textarea, input')) document.querySelector('textarea, input').value = state;
-        } else if (history.past.length) {
-            // Undo
-            const state = history.past.pop();
-            history.future.push(document.querySelector('textarea, input')?.value);
-            if (document.querySelector('textarea, input')) document.querySelector('textarea, input').value = state;
-        }
-    }
-});
-document.addEventListener('input', saveState);
-</script>
-<script>
-// Usage stats
-const stats = JSON.parse(localStorage.getItem('app-stats') || '{}');
-stats.visits = (stats.visits || 0) + 1;
-stats.lastVisit = new Date().toISOString();
-localStorage.setItem('app-stats', JSON.stringify(stats));
-console.log('Visits:', stats.visits);
-</script>
-<script>
-// Export functionality
-function exportData(format) {
-    const data = document.querySelector('textarea, input')?.value || document.body.innerText;
-    const blob = new Blob([data], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'export.' + format;
-    a.click();
-    URL.revokeObjectURL(url);
-}
-</script>
-<script>
-// Import from file
-const importBtn = document.createElement('button');
-importBtn.textContent = '📁 Import';
-importBtn.onclick = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.onchange = (e) => {
-        const file = e.target.files[0];
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const textArea = document.querySelector('textarea');
-            if (textArea) textArea.value = e.target.result;
-        };
-        reader.readAsText(file);
-    };
-    input.click();
-};
-document.querySelector('.container')?.appendChild(importBtn);
-</script>
-<script>
-// Simple tutorial
-const tutorialSteps = [
-    { selector: 'h1', text: 'Welcome! This is the main title.' },
-    { selector: 'button', text: 'Click here to perform actions.' }
-];
-let currentStep = 0;
-function showTutorial() {
-    if (currentStep < tutorialSteps.length) {
-        const step = tutorialSteps[currentStep];
-        const el = document.querySelector(step.selector);
-        if (el) {
-            const tooltip = document.createElement('div');
-            tooltip.textContent = step.text;
-            tooltip.style.cssText = 'position:absolute;background:#6f42c1;color:white;padding:10px;border-radius:5px;z-index:1000;';
-            el.style.position = 'relative';
-            el.appendChild(tooltip);
-            setTimeout(() => tooltip.remove(), 3000);
-        }
-        currentStep++;
-    }
-}
-// Show tutorial on first visit
-if (!localStorage.getItem('tutorial-shown')) {
-    setTimeout(showTutorial, 1000);
-    localStorage.setItem('tutorial-shown', 'true');
-}
-</script>
-<script>
-// Offline indicator
-const offlineIndicator = document.createElement('div');
-offlineIndicator.textContent = '⚠️ Offline';
-offlineIndicator.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#ff6b6b;color:white;text-align:center;padding:5px;display:none;';
-document.body.appendChild(offlineIndicator);
-window.addEventListener('online', () => offlineIndicator.style.display = 'none');
-window.addEventListener('offline', () => offlineIndicator.style.display = 'block');
-</script>
-<script>
-// Templates gallery
-const templates = [
-    { name: 'Default', apply: () => {} },
-    { name: 'Minimal', apply: () => document.body.style.fontFamily = 'system-ui, sans-serif' }
-];
-const templateSelect = document.createElement('select');
-templates.forEach(t => {
-    const opt = document.createElement('option');
-    opt.value = t.name;
-    opt.textContent = t.name;
-    templateSelect.appendChild(opt);
-});
-templateSelect.onchange = (e) => {
-    const template = templates.find(t => t.name === e.target.value);
-    if (template) template.apply();
-};
-document.querySelector('.container')?.appendChild(templateSelect);
-</script>
-<script>
-// Share functionality
-const shareBtn = document.createElement('button');
-shareBtn.textContent = '🔗 Share';
-shareBtn.style.cssText = 'position:fixed;bottom:20px;right:20px;padding:10px 20px;background:#6f42c1;color:white;border:none;border-radius:20px;cursor:pointer;';
-shareBtn.onclick = () => {
-    if (navigator.share) {
-        navigator.share({ title: document.title, url: location.href });
-    } else {
-        navigator.clipboard.writeText(location.href);
-        shareBtn.textContent = '✅ Copied!';
-        setTimeout(() => shareBtn.textContent = '🔗 Share', 2000);
-    }
-};
-document.body.appendChild(shareBtn);
-</script>
-<script>
-// Offline indicator
-const offlineIndicator = document.createElement('div');
-offlineIndicator.textContent = '⚠️ Offline';
-offlineIndicator.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#ff6b6b;color:white;text-align:center;padding:5px;display:none;';
-document.body.appendChild(offlineIndicator);
-window.addEventListener('online', () => offlineIndicator.style.display = 'none');
-window.addEventListener('offline', () => offlineIndicator.style.display = 'block');
-</script>
-<style>
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-.container { animation: fadeIn 0.3s ease-out; }
-button { transition: all 0.2s ease; }
-button:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
-</style>
-<script>
-// Share functionality
-const shareBtn = document.createElement('button');
-shareBtn.textContent = '🔗 Share';
-shareBtn.style.cssText = 'position:fixed;bottom:20px;right:20px;padding:10px 20px;background:#6f42c1;color:white;border:none;border-radius:20px;cursor:pointer;';
-shareBtn.onclick = () => {
-    if (navigator.share) {
-        navigator.share({ title: document.title, url: location.href });
-    } else {
-        navigator.clipboard.writeText(location.href);
-        shareBtn.textContent = '✅ Copied!';
-        setTimeout(() => shareBtn.textContent = '🔗 Share', 2000);
-    }
-};
-document.body.appendChild(shareBtn);
-</script>
-<script>
-// Undo/Redo history
-const history = { past: [], future: [] };
-const saveState = () => {
-    const state = document.querySelector('textarea, input')?.value;
-    if (state) history.past.push(state);
-};
-document.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-        e.preventDefault();
-        if (e.shiftKey && history.future.length) {
-            // Redo
-            const state = history.future.pop();
-            history.past.push(document.querySelector('textarea, input')?.value);
-            if (document.querySelector('textarea, input')) document.querySelector('textarea, input').value = state;
-        } else if (history.past.length) {
-            // Undo
-            const state = history.past.pop();
-            history.future.push(document.querySelector('textarea, input')?.value);
-            if (document.querySelector('textarea, input')) document.querySelector('textarea, input').value = state;
-        }
-    }
-});
-document.addEventListener('input', saveState);
-</script>
-<script>
-// Dark mode toggle
-const darkModeToggle = document.createElement('button');
-darkModeToggle.textContent = '🌙';
-darkModeToggle.style.cssText = 'position:fixed;top:20px;right:20px;background:none;border:none;font-size:24px;cursor:pointer;z-index:1000;';
-darkModeToggle.onclick = () => {
-    document.body.classList.toggle('dark-mode');
-    darkModeToggle.textContent = document.body.classList.contains('dark-mode') ? '☀️' : '🌙';
-    localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
-};
-document.body.appendChild(darkModeToggle);
-
-// Check saved preference
-if (localStorage.getItem('darkMode') === 'true') {
-    document.body.classList.add('dark-mode');
-    darkModeToggle.textContent = '☀️';
-}
-</script>
-<style>
-.dark-mode { background: #1a1a1a !important; color: #e0e0e0 !important; }
-.dark-mode .container { background: #2a2a2a !important; }
-</style>
-<script>
-// Keyboard shortcuts
-document.addEventListener('keydown', (e) => {
-    if (e.ctrlKey || e.metaKey) {
-        switch(e.key) {
-            case 's': e.preventDefault(); console.log('Save shortcut'); break;
-            case 'r': e.preventDefault(); location.reload(); break;
-            case 'f': e.preventDefault(); document.querySelector('input')?.focus(); break;
-        }
-    }
-});
-</script>
-<script>
-// Undo/Redo history
-const history = { past: [], future: [] };
-const saveState = () => {
-    const state = document.querySelector('textarea, input')?.value;
-    if (state) history.past.push(state);
-};
-document.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-        e.preventDefault();
-        if (e.shiftKey && history.future.length) {
-            // Redo
-            const state = history.future.pop();
-            history.past.push(document.querySelector('textarea, input')?.value);
-            if (document.querySelector('textarea, input')) document.querySelector('textarea, input').value = state;
-        } else if (history.past.length) {
-            // Undo
-            const state = history.past.pop();
-            history.future.push(document.querySelector('textarea, input')?.value);
-            if (document.querySelector('textarea, input')) document.querySelector('textarea, input').value = state;
-        }
-    }
-});
-document.addEventListener('input', saveState);
-</script>
-<style>
-@media (max-width: 768px) {
-    .container { padding: 10px; }
-    h1 { font-size: 1.5rem; }
-    button { width: 100%; margin: 5px 0; }
-}
-</style>
-<script>
-// API integration ready
-const API = {
-    async fetch(url, options = {}) {
-        const response = await fetch(url, options);
-        return response.json();
-    }
-};
-</script>
-<script>
-// API integration ready
-const API = {
-    async fetch(url, options = {}) {
-        const response = await fetch(url, options);
-        return response.json();
-    }
-};
-</script>
-<style>
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-.container { animation: fadeIn 0.3s ease-out; }
-button { transition: all 0.2s ease; }
-button:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
-</style>
-<script>
-// Simple tutorial
-const tutorialSteps = [
-    { selector: 'h1', text: 'Welcome! This is the main title.' },
-    { selector: 'button', text: 'Click here to perform actions.' }
-];
-let currentStep = 0;
-function showTutorial() {
-    if (currentStep < tutorialSteps.length) {
-        const step = tutorialSteps[currentStep];
-        const el = document.querySelector(step.selector);
-        if (el) {
-            const tooltip = document.createElement('div');
-            tooltip.textContent = step.text;
-            tooltip.style.cssText = 'position:absolute;background:#6f42c1;color:white;padding:10px;border-radius:5px;z-index:1000;';
-            el.style.position = 'relative';
-            el.appendChild(tooltip);
-            setTimeout(() => tooltip.remove(), 3000);
-        }
-        currentStep++;
-    }
-}
-// Show tutorial on first visit
-if (!localStorage.getItem('tutorial-shown')) {
-    setTimeout(showTutorial, 1000);
-    localStorage.setItem('tutorial-shown', 'true');
-}
-</script>
-<script>
-// Auto-save to localStorage
-const saveKey = 'app-data-' + location.pathname;
-const saveData = () => {
-    const data = { timestamp: Date.now(), inputs: {} };
-    document.querySelectorAll('input, textarea').forEach(el => {
-        data.inputs[el.id || el.name] = el.value;
-    });
-    localStorage.setItem(saveKey, JSON.stringify(data));
-};
-const loadData = () => {
-    const saved = localStorage.getItem(saveKey);
-    if (saved) {
-        const data = JSON.parse(saved);
-        Object.entries(data.inputs).forEach(([key, value]) => {
-            const el = document.getElementById(key) || document.querySelector('[name="' + key + '"]');
-            if (el) el.value = value;
-        });
-    }
-};
-document.addEventListener('input', saveData);
-document.addEventListener('DOMContentLoaded', loadData);
-</script>
-<script>
-// Undo/Redo history
-const history = { past: [], future: [] };
-const saveState = () => {
-    const state = document.querySelector('textarea, input')?.value;
-    if (state) history.past.push(state);
-};
-document.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-        e.preventDefault();
-        if (e.shiftKey && history.future.length) {
-            // Redo
-            const state = history.future.pop();
-            history.past.push(document.querySelector('textarea, input')?.value);
-            if (document.querySelector('textarea, input')) document.querySelector('textarea, input').value = state;
-        } else if (history.past.length) {
-            // Undo
-            const state = history.past.pop();
-            history.future.push(document.querySelector('textarea, input')?.value);
-            if (document.querySelector('textarea, input')) document.querySelector('textarea, input').value = state;
-        }
-    }
-});
-document.addEventListener('input', saveState);
-</script>
-<script>
-// Request notification permission
-if ('Notification' in window && Notification.permission === 'default') {
-    Notification.requestPermission();
-}
-function notify(title, body) {
-    if (Notification.permission === 'granted') {
-        new Notification(title, { body });
-    }
-}
-</script>
-<style>
-@media (max-width: 768px) {
-    .container { padding: 10px; }
-    h1 { font-size: 1.5rem; }
-    button { width: 100%; margin: 5px 0; }
-}
-</style>
-<script>
-// Templates gallery
-const templates = [
-    { name: 'Default', apply: () => {} },
-    { name: 'Minimal', apply: () => document.body.style.fontFamily = 'system-ui, sans-serif' }
-];
-const templateSelect = document.createElement('select');
-templates.forEach(t => {
-    const opt = document.createElement('option');
-    opt.value = t.name;
-    opt.textContent = t.name;
-    templateSelect.appendChild(opt);
-});
-templateSelect.onchange = (e) => {
-    const template = templates.find(t => t.name === e.target.value);
-    if (template) template.apply();
-};
-document.querySelector('.container')?.appendChild(templateSelect);
-</script>
-<script>
-// API integration ready
-const API = {
-    async fetch(url, options = {}) {
-        const response = await fetch(url, options);
-        return response.json();
-    }
-};
-</script>
-<script>
-// Export functionality
-function exportData(format) {
-    const data = document.querySelector('textarea, input')?.value || document.body.innerText;
-    const blob = new Blob([data], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'export.' + format;
-    a.click();
-    URL.revokeObjectURL(url);
-}
-</script>
-<script>
-// Templates gallery
-const templates = [
-    { name: 'Default', apply: () => {} },
-    { name: 'Minimal', apply: () => document.body.style.fontFamily = 'system-ui, sans-serif' }
-];
-const templateSelect = document.createElement('select');
-templates.forEach(t => {
-    const opt = document.createElement('option');
-    opt.value = t.name;
-    opt.textContent = t.name;
-    templateSelect.appendChild(opt);
-});
-templateSelect.onchange = (e) => {
-    const template = templates.find(t => t.name === e.target.value);
-    if (template) template.apply();
-};
-document.querySelector('.container')?.appendChild(templateSelect);
-</script>
-<script>
-// Usage stats
-const stats = JSON.parse(localStorage.getItem('app-stats') || '{}');
-stats.visits = (stats.visits || 0) + 1;
-stats.lastVisit = new Date().toISOString();
-localStorage.setItem('app-stats', JSON.stringify(stats));
-console.log('Visits:', stats.visits);
-</script>
-<script>
-// Undo/Redo history
-const history = { past: [], future: [] };
-const saveState = () => {
-    const state = document.querySelector('textarea, input')?.value;
-    if (state) history.past.push(state);
-};
-document.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-        e.preventDefault();
-        if (e.shiftKey && history.future.length) {
-            // Redo
-            const state = history.future.pop();
-            history.past.push(document.querySelector('textarea, input')?.value);
-            if (document.querySelector('textarea, input')) document.querySelector('textarea, input').value = state;
-        } else if (history.past.length) {
-            // Undo
-            const state = history.past.pop();
-            history.future.push(document.querySelector('textarea, input')?.value);
-            if (document.querySelector('textarea, input')) document.querySelector('textarea, input').value = state;
-        }
-    }
-});
-document.addEventListener('input', saveState);
-</script>
-<script>
-// Undo/Redo history
-const history = { past: [], future: [] };
-const saveState = () => {
-    const state = document.querySelector('textarea, input')?.value;
-    if (state) history.past.push(state);
-};
-document.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-        e.preventDefault();
-        if (e.shiftKey && history.future.length) {
-            // Redo
-            const state = history.future.pop();
-            history.past.push(document.querySelector('textarea, input')?.value);
-            if (document.querySelector('textarea, input')) document.querySelector('textarea, input').value = state;
-        } else if (history.past.length) {
-            // Undo
-            const state = history.past.pop();
-            history.future.push(document.querySelector('textarea, input')?.value);
-            if (document.querySelector('textarea, input')) document.querySelector('textarea, input').value = state;
-        }
-    }
-});
-document.addEventListener('input', saveState);
-</script>
-<script>
-// Usage stats
-const stats = JSON.parse(localStorage.getItem('app-stats') || '{}');
-stats.visits = (stats.visits || 0) + 1;
-stats.lastVisit = new Date().toISOString();
-localStorage.setItem('app-stats', JSON.stringify(stats));
-console.log('Visits:', stats.visits);
-</script>
-<script>
-// API integration ready
-const API = {
-    async fetch(url, options = {}) {
-        const response = await fetch(url, options);
-        return response.json();
-    }
-};
-</script>
-<script>
-// Usage stats
-const stats = JSON.parse(localStorage.getItem('app-stats') || '{}');
-stats.visits = (stats.visits || 0) + 1;
-stats.lastVisit = new Date().toISOString();
-localStorage.setItem('app-stats', JSON.stringify(stats));
-console.log('Visits:', stats.visits);
-</script>
-<script>
-// Share functionality
-const shareBtn = document.createElement('button');
-shareBtn.textContent = '🔗 Share';
-shareBtn.style.cssText = 'position:fixed;bottom:20px;right:20px;padding:10px 20px;background:#6f42c1;color:white;border:none;border-radius:20px;cursor:pointer;';
-shareBtn.onclick = () => {
-    if (navigator.share) {
-        navigator.share({ title: document.title, url: location.href });
-    } else {
-        navigator.clipboard.writeText(location.href);
-        shareBtn.textContent = '✅ Copied!';
-        setTimeout(() => shareBtn.textContent = '🔗 Share', 2000);
-    }
-};
-document.body.appendChild(shareBtn);
-</script>
-<script>
-// Simple tutorial
-const tutorialSteps = [
-    { selector: 'h1', text: 'Welcome! This is the main title.' },
-    { selector: 'button', text: 'Click here to perform actions.' }
-];
-let currentStep = 0;
-function showTutorial() {
-    if (currentStep < tutorialSteps.length) {
-        const step = tutorialSteps[currentStep];
-        const el = document.querySelector(step.selector);
-        if (el) {
-            const tooltip = document.createElement('div');
-            tooltip.textContent = step.text;
-            tooltip.style.cssText = 'position:absolute;background:#6f42c1;color:white;padding:10px;border-radius:5px;z-index:1000;';
-            el.style.position = 'relative';
-            el.appendChild(tooltip);
-            setTimeout(() => tooltip.remove(), 3000);
-        }
-        currentStep++;
-    }
-}
-// Show tutorial on first visit
-if (!localStorage.getItem('tutorial-shown')) {
-    setTimeout(showTutorial, 1000);
-    localStorage.setItem('tutorial-shown', 'true');
-}
-</script>
-<script>
-// Share functionality
-const shareBtn = document.createElement('button');
-shareBtn.textContent = '🔗 Share';
-shareBtn.style.cssText = 'position:fixed;bottom:20px;right:20px;padding:10px 20px;background:#6f42c1;color:white;border:none;border-radius:20px;cursor:pointer;';
-shareBtn.onclick = () => {
-    if (navigator.share) {
-        navigator.share({ title: document.title, url: location.href });
-    } else {
-        navigator.clipboard.writeText(location.href);
-        shareBtn.textContent = '✅ Copied!';
-        setTimeout(() => shareBtn.textContent = '🔗 Share', 2000);
-    }
-};
-document.body.appendChild(shareBtn);
-</script>
-<script>
-// Undo/Redo history
-const history = { past: [], future: [] };
-const saveState = () => {
-    const state = document.querySelector('textarea, input')?.value;
-    if (state) history.past.push(state);
-};
-document.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-        e.preventDefault();
-        if (e.shiftKey && history.future.length) {
-            // Redo
-            const state = history.future.pop();
-            history.past.push(document.querySelector('textarea, input')?.value);
-            if (document.querySelector('textarea, input')) document.querySelector('textarea, input').value = state;
-        } else if (history.past.length) {
-            // Undo
-            const state = history.past.pop();
-            history.future.push(document.querySelector('textarea, input')?.value);
-            if (document.querySelector('textarea, input')) document.querySelector('textarea, input').value = state;
-        }
-    }
-});
-document.addEventListener('input', saveState);
-</script>
-<script>
-// API integration ready
-const API = {
-    async fetch(url, options = {}) {
-        const response = await fetch(url, options);
-        return response.json();
-    }
-};
-</script>
-<script>
-// Auto-save to localStorage
-const saveKey = 'app-data-' + location.pathname;
-const saveData = () => {
-    const data = { timestamp: Date.now(), inputs: {} };
-    document.querySelectorAll('input, textarea').forEach(el => {
-        data.inputs[el.id || el.name] = el.value;
-    });
-    localStorage.setItem(saveKey, JSON.stringify(data));
-};
-const loadData = () => {
-    const saved = localStorage.getItem(saveKey);
-    if (saved) {
-        const data = JSON.parse(saved);
-        Object.entries(data.inputs).forEach(([key, value]) => {
-            const el = document.getElementById(key) || document.querySelector('[name="' + key + '"]');
-            if (el) el.value = value;
-        });
-    }
-};
-document.addEventListener('input', saveData);
-document.addEventListener('DOMContentLoaded', loadData);
-</script>
-<style>
-@media (max-width: 768px) {
-    .container { padding: 10px; }
-    h1 { font-size: 1.5rem; }
-    button { width: 100%; margin: 5px 0; }
-}
-</style>
-<script>
-// Export functionality
-function exportData(format) {
-    const data = document.querySelector('textarea, input')?.value || document.body.innerText;
-    const blob = new Blob([data], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'export.' + format;
-    a.click();
-    URL.revokeObjectURL(url);
-}
-</script>
-<script>
-// Undo/Redo history
-const history = { past: [], future: [] };
-const saveState = () => {
-    const state = document.querySelector('textarea, input')?.value;
-    if (state) history.past.push(state);
-};
-document.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-        e.preventDefault();
-        if (e.shiftKey && history.future.length) {
-            // Redo
-            const state = history.future.pop();
-            history.past.push(document.querySelector('textarea, input')?.value);
-            if (document.querySelector('textarea, input')) document.querySelector('textarea, input').value = state;
-        } else if (history.past.length) {
-            // Undo
-            const state = history.past.pop();
-            history.future.push(document.querySelector('textarea, input')?.value);
-            if (document.querySelector('textarea, input')) document.querySelector('textarea, input').value = state;
-        }
-    }
-});
-document.addEventListener('input', saveState);
-</script>
-<style>
-@media (max-width: 768px) {
-    .container { padding: 10px; }
-    h1 { font-size: 1.5rem; }
-    button { width: 100%; margin: 5px 0; }
-}
-</style>
-<script>
-// Keyboard shortcuts
-document.addEventListener('keydown', (e) => {
-    if (e.ctrlKey || e.metaKey) {
-        switch(e.key) {
-            case 's': e.preventDefault(); console.log('Save shortcut'); break;
-            case 'r': e.preventDefault(); location.reload(); break;
-            case 'f': e.preventDefault(); document.querySelector('input')?.focus(); break;
-        }
-    }
-});
-</script>
-<script>
-// Simple tutorial
-const tutorialSteps = [
-    { selector: 'h1', text: 'Welcome! This is the main title.' },
-    { selector: 'button', text: 'Click here to perform actions.' }
-];
-let currentStep = 0;
-function showTutorial() {
-    if (currentStep < tutorialSteps.length) {
-        const step = tutorialSteps[currentStep];
-        const el = document.querySelector(step.selector);
-        if (el) {
-            const tooltip = document.createElement('div');
-            tooltip.textContent = step.text;
-            tooltip.style.cssText = 'position:absolute;background:#6f42c1;color:white;padding:10px;border-radius:5px;z-index:1000;';
-            el.style.position = 'relative';
-            el.appendChild(tooltip);
-            setTimeout(() => tooltip.remove(), 3000);
-        }
-        currentStep++;
-    }
-}
-// Show tutorial on first visit
-if (!localStorage.getItem('tutorial-shown')) {
-    setTimeout(showTutorial, 1000);
-    localStorage.setItem('tutorial-shown', 'true');
-}
-</script>
-<script>
-// Auto-save to localStorage
-const saveKey = 'app-data-' + location.pathname;
-const saveData = () => {
-    const data = { timestamp: Date.now(), inputs: {} };
-    document.querySelectorAll('input, textarea').forEach(el => {
-        data.inputs[el.id || el.name] = el.value;
-    });
-    localStorage.setItem(saveKey, JSON.stringify(data));
-};
-const loadData = () => {
-    const saved = localStorage.getItem(saveKey);
-    if (saved) {
-        const data = JSON.parse(saved);
-        Object.entries(data.inputs).forEach(([key, value]) => {
-            const el = document.getElementById(key) || document.querySelector('[name="' + key + '"]');
-            if (el) el.value = value;
-        });
-    }
-};
-document.addEventListener('input', saveData);
-document.addEventListener('DOMContentLoaded', loadData);
-</script>
-<script>
-// Auto-save to localStorage
-const saveKey = 'app-data-' + location.pathname;
-const saveData = () => {
-    const data = { timestamp: Date.now(), inputs: {} };
-    document.querySelectorAll('input, textarea').forEach(el => {
-        data.inputs[el.id || el.name] = el.value;
-    });
-    localStorage.setItem(saveKey, JSON.stringify(data));
-};
-const loadData = () => {
-    const saved = localStorage.getItem(saveKey);
-    if (saved) {
-        const data = JSON.parse(saved);
-        Object.entries(data.inputs).forEach(([key, value]) => {
-            const el = document.getElementById(key) || document.querySelector('[name="' + key + '"]');
-            if (el) el.value = value;
-        });
-    }
-};
-document.addEventListener('input', saveData);
-document.addEventListener('DOMContentLoaded', loadData);
-</script>
-<style>
-@media (max-width: 768px) {
-    .container { padding: 10px; }
-    h1 { font-size: 1.5rem; }
-    button { width: 100%; margin: 5px 0; }
-}
-</style>
-<script>
-// Keyboard shortcuts
-document.addEventListener('keydown', (e) => {
-    if (e.ctrlKey || e.metaKey) {
-        switch(e.key) {
-            case 's': e.preventDefault(); console.log('Save shortcut'); break;
-            case 'r': e.preventDefault(); location.reload(); break;
-            case 'f': e.preventDefault(); document.querySelector('input')?.focus(); break;
-        }
-    }
-});
-</script>
-<script>
-// Offline indicator
-const offlineIndicator = document.createElement('div');
-offlineIndicator.textContent = '⚠️ Offline';
-offlineIndicator.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#ff6b6b;color:white;text-align:center;padding:5px;display:none;';
-document.body.appendChild(offlineIndicator);
-window.addEventListener('online', () => offlineIndicator.style.display = 'none');
-window.addEventListener('offline', () => offlineIndicator.style.display = 'block');
-</script>
-<script>
-// Dark mode toggle
-const darkModeToggle = document.createElement('button');
-darkModeToggle.textContent = '🌙';
-darkModeToggle.style.cssText = 'position:fixed;top:20px;right:20px;background:none;border:none;font-size:24px;cursor:pointer;z-index:1000;';
-darkModeToggle.onclick = () => {
-    document.body.classList.toggle('dark-mode');
-    darkModeToggle.textContent = document.body.classList.contains('dark-mode') ? '☀️' : '🌙';
-    localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
-};
-document.body.appendChild(darkModeToggle);
-
-// Check saved preference
-if (localStorage.getItem('darkMode') === 'true') {
-    document.body.classList.add('dark-mode');
-    darkModeToggle.textContent = '☀️';
-}
-</script>
-<style>
-.dark-mode { background: #1a1a1a !important; color: #e0e0e0 !important; }
-.dark-mode .container { background: #2a2a2a !important; }
-</style>
-<script>
-// Simple tutorial
-const tutorialSteps = [
-    { selector: 'h1', text: 'Welcome! This is the main title.' },
-    { selector: 'button', text: 'Click here to perform actions.' }
-];
-let currentStep = 0;
-function showTutorial() {
-    if (currentStep < tutorialSteps.length) {
-        const step = tutorialSteps[currentStep];
-        const el = document.querySelector(step.selector);
-        if (el) {
-            const tooltip = document.createElement('div');
-            tooltip.textContent = step.text;
-            tooltip.style.cssText = 'position:absolute;background:#6f42c1;color:white;padding:10px;border-radius:5px;z-index:1000;';
-            el.style.position = 'relative';
-            el.appendChild(tooltip);
-            setTimeout(() => tooltip.remove(), 3000);
-        }
-        currentStep++;
-    }
-}
-// Show tutorial on first visit
-if (!localStorage.getItem('tutorial-shown')) {
-    setTimeout(showTutorial, 1000);
-    localStorage.setItem('tutorial-shown', 'true');
-}
-</script>
-<script>
-// Simple tutorial
-const tutorialSteps = [
-    { selector: 'h1', text: 'Welcome! This is the main title.' },
-    { selector: 'button', text: 'Click here to perform actions.' }
-];
-let currentStep = 0;
-function showTutorial() {
-    if (currentStep < tutorialSteps.length) {
-        const step = tutorialSteps[currentStep];
-        const el = document.querySelector(step.selector);
-        if (el) {
-            const tooltip = document.createElement('div');
-            tooltip.textContent = step.text;
-            tooltip.style.cssText = 'position:absolute;background:#6f42c1;color:white;padding:10px;border-radius:5px;z-index:1000;';
-            el.style.position = 'relative';
-            el.appendChild(tooltip);
-            setTimeout(() => tooltip.remove(), 3000);
-        }
-        currentStep++;
-    }
-}
-// Show tutorial on first visit
-if (!localStorage.getItem('tutorial-shown')) {
-    setTimeout(showTutorial, 1000);
-    localStorage.setItem('tutorial-shown', 'true');
-}
-</script>
-<script>
-// Auto-save to localStorage
-const saveKey = 'app-data-' + location.pathname;
-const saveData = () => {
-    const data = { timestamp: Date.now(), inputs: {} };
-    document.querySelectorAll('input, textarea').forEach(el => {
-        data.inputs[el.id || el.name] = el.value;
-    });
-    localStorage.setItem(saveKey, JSON.stringify(data));
-};
-const loadData = () => {
-    const saved = localStorage.getItem(saveKey);
-    if (saved) {
-        const data = JSON.parse(saved);
-        Object.entries(data.inputs).forEach(([key, value]) => {
-            const el = document.getElementById(key) || document.querySelector('[name="' + key + '"]');
-            if (el) el.value = value;
-        });
-    }
-};
-document.addEventListener('input', saveData);
-document.addEventListener('DOMContentLoaded', loadData);
-</script>
-<script>
-// Templates gallery
-const templates = [
-    { name: 'Default', apply: () => {} },
-    { name: 'Minimal', apply: () => document.body.style.fontFamily = 'system-ui, sans-serif' }
-];
-const templateSelect = document.createElement('select');
-templates.forEach(t => {
-    const opt = document.createElement('option');
-    opt.value = t.name;
-    opt.textContent = t.name;
-    templateSelect.appendChild(opt);
-});
-templateSelect.onchange = (e) => {
-    const template = templates.find(t => t.name === e.target.value);
-    if (template) template.apply();
-};
-document.querySelector('.container')?.appendChild(templateSelect);
-</script>
-<style>
-@media (max-width: 768px) {
-    .container { padding: 10px; }
-    h1 { font-size: 1.5rem; }
-    button { width: 100%; margin: 5px 0; }
-}
-</style>
-<script>
-// Export functionality
-function exportData(format) {
-    const data = document.querySelector('textarea, input')?.value || document.body.innerText;
-    const blob = new Blob([data], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'export.' + format;
-    a.click();
-    URL.revokeObjectURL(url);
-}
-</script>
-<script>
-// Undo/Redo history
-const history = { past: [], future: [] };
-const saveState = () => {
-    const state = document.querySelector('textarea, input')?.value;
-    if (state) history.past.push(state);
-};
-document.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-        e.preventDefault();
-        if (e.shiftKey && history.future.length) {
-            // Redo
-            const state = history.future.pop();
-            history.past.push(document.querySelector('textarea, input')?.value);
-            if (document.querySelector('textarea, input')) document.querySelector('textarea, input').value = state;
-        } else if (history.past.length) {
-            // Undo
-            const state = history.past.pop();
-            history.future.push(document.querySelector('textarea, input')?.value);
-            if (document.querySelector('textarea, input')) document.querySelector('textarea, input').value = state;
-        }
-    }
-});
-document.addEventListener('input', saveState);
-</script>
-<script>
-// Simple tutorial
-const tutorialSteps = [
-    { selector: 'h1', text: 'Welcome! This is the main title.' },
-    { selector: 'button', text: 'Click here to perform actions.' }
-];
-let currentStep = 0;
-function showTutorial() {
-    if (currentStep < tutorialSteps.length) {
-        const step = tutorialSteps[currentStep];
-        const el = document.querySelector(step.selector);
-        if (el) {
-            const tooltip = document.createElement('div');
-            tooltip.textContent = step.text;
-            tooltip.style.cssText = 'position:absolute;background:#6f42c1;color:white;padding:10px;border-radius:5px;z-index:1000;';
-            el.style.position = 'relative';
-            el.appendChild(tooltip);
-            setTimeout(() => tooltip.remove(), 3000);
-        }
-        currentStep++;
-    }
-}
-// Show tutorial on first visit
-if (!localStorage.getItem('tutorial-shown')) {
-    setTimeout(showTutorial, 1000);
-    localStorage.setItem('tutorial-shown', 'true');
-}
-</script>
-<script>
-// Templates gallery
-const templates = [
-    { name: 'Default', apply: () => {} },
-    { name: 'Minimal', apply: () => document.body.style.fontFamily = 'system-ui, sans-serif' }
-];
-const templateSelect = document.createElement('select');
-templates.forEach(t => {
-    const opt = document.createElement('option');
-    opt.value = t.name;
-    opt.textContent = t.name;
-    templateSelect.appendChild(opt);
-});
-templateSelect.onchange = (e) => {
-    const template = templates.find(t => t.name === e.target.value);
-    if (template) template.apply();
-};
-document.querySelector('.container')?.appendChild(templateSelect);
-</script>
-<script>
-// Offline indicator
-const offlineIndicator = document.createElement('div');
-offlineIndicator.textContent = '⚠️ Offline';
-offlineIndicator.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#ff6b6b;color:white;text-align:center;padding:5px;display:none;';
-document.body.appendChild(offlineIndicator);
-window.addEventListener('online', () => offlineIndicator.style.display = 'none');
-window.addEventListener('offline', () => offlineIndicator.style.display = 'block');
-</script>
-<script>
-// Request notification permission
-if ('Notification' in window && Notification.permission === 'default') {
-    Notification.requestPermission();
-}
-function notify(title, body) {
-    if (Notification.permission === 'granted') {
-        new Notification(title, { body });
-    }
-}
-</script>
-<script>
-// API integration ready
-const API = {
-    async fetch(url, options = {}) {
-        const response = await fetch(url, options);
-        return response.json();
-    }
-};
-</script>
-<script>
-// Auto-save to localStorage
-const saveKey = 'app-data-' + location.pathname;
-const saveData = () => {
-    const data = { timestamp: Date.now(), inputs: {} };
-    document.querySelectorAll('input, textarea').forEach(el => {
-        data.inputs[el.id || el.name] = el.value;
-    });
-    localStorage.setItem(saveKey, JSON.stringify(data));
-};
-const loadData = () => {
-    const saved = localStorage.getItem(saveKey);
-    if (saved) {
-        const data = JSON.parse(saved);
-        Object.entries(data.inputs).forEach(([key, value]) => {
-            const el = document.getElementById(key) || document.querySelector('[name="' + key + '"]');
-            if (el) el.value = value;
-        });
-    }
-};
-document.addEventListener('input', saveData);
-document.addEventListener('DOMContentLoaded', loadData);
-</script>
-<script>
-// Import from file
-const importBtn = document.createElement('button');
-importBtn.textContent = '📁 Import';
-importBtn.onclick = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.onchange = (e) => {
-        const file = e.target.files[0];
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const textArea = document.querySelector('textarea');
-            if (textArea) textArea.value = e.target.result;
-        };
-        reader.readAsText(file);
-    };
-    input.click();
-};
-document.querySelector('.container')?.appendChild(importBtn);
-</script>
-<script>
-// Templates gallery
-const templates = [
-    { name: 'Default', apply: () => {} },
-    { name: 'Minimal', apply: () => document.body.style.fontFamily = 'system-ui, sans-serif' }
-];
-const templateSelect = document.createElement('select');
-templates.forEach(t => {
-    const opt = document.createElement('option');
-    opt.value = t.name;
-    opt.textContent = t.name;
-    templateSelect.appendChild(opt);
-});
-templateSelect.onchange = (e) => {
-    const template = templates.find(t => t.name === e.target.value);
-    if (template) template.apply();
-};
-document.querySelector('.container')?.appendChild(templateSelect);
-</script>
-<script>
-// Import from file
-const importBtn = document.createElement('button');
-importBtn.textContent = '📁 Import';
-importBtn.onclick = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.onchange = (e) => {
-        const file = e.target.files[0];
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const textArea = document.querySelector('textarea');
-            if (textArea) textArea.value = e.target.result;
-        };
-        reader.readAsText(file);
-    };
-    input.click();
-};
-document.querySelector('.container')?.appendChild(importBtn);
-</script>
-<script>
-// Request notification permission
-if ('Notification' in window && Notification.permission === 'default') {
-    Notification.requestPermission();
-}
-function notify(title, body) {
-    if (Notification.permission === 'granted') {
-        new Notification(title, { body });
-    }
-}
-</script>
-<script>
-// Export functionality
-function exportData(format) {
-    const data = document.querySelector('textarea, input')?.value || document.body.innerText;
-    const blob = new Blob([data], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'export.' + format;
-    a.click();
-    URL.revokeObjectURL(url);
-}
-</script>
-<script>
-// Import from file
-const importBtn = document.createElement('button');
-importBtn.textContent = '📁 Import';
-importBtn.onclick = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.onchange = (e) => {
-        const file = e.target.files[0];
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const textArea = document.querySelector('textarea');
-            if (textArea) textArea.value = e.target.result;
-        };
-        reader.readAsText(file);
-    };
-    input.click();
-};
-document.querySelector('.container')?.appendChild(importBtn);
-</script>
-<script>
-// Import from file
-const importBtn = document.createElement('button');
-importBtn.textContent = '📁 Import';
-importBtn.onclick = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.onchange = (e) => {
-        const file = e.target.files[0];
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const textArea = document.querySelector('textarea');
-            if (textArea) textArea.value = e.target.result;
-        };
-        reader.readAsText(file);
-    };
-    input.click();
-};
-document.querySelector('.container')?.appendChild(importBtn);
-</script>
