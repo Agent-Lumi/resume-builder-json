@@ -235,6 +235,32 @@
         }
         .toast.success { background: #10b981; }
         .toast.error { background: #ef4444; }
+        /* NEW: Template selector styles */
+        select { width: 100%; padding: 10px 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-family: inherit; font-size: 0.95em; background: white; cursor: pointer; transition: border-color 0.2s; }
+        select:focus { outline: none; border-color: #11998e; }
+        /* NEW: Color picker styles */
+        .color-picker { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .color-btn { width: 32px; height: 32px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; transition: all 0.2s; padding: 0; margin: 0; }
+        .color-btn:hover { transform: scale(1.1); }
+        .color-btn.active { border-color: #1f2937; box-shadow: 0 0 0 2px white, 0 0 0 4px #1f2937; }
+        #customColor { width: 32px; height: 32px; border: none; border-radius: 50%; cursor: pointer; padding: 0; overflow: hidden; }
+        /* NEW: Section toggle styles */
+        .toggle-sections { display: flex; flex-wrap: wrap; gap: 12px; }
+        .toggle-checkbox { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.9em; color: #4b5563; }
+        .toggle-checkbox input { cursor: pointer; }
+        /* Template-specific preview styles */
+        .template-modern .resume-header { border-bottom: 3px solid var(--accent-color, #11998e); }
+        .template-modern .resume-section h3 { text-transform: none; letter-spacing: normal; border-bottom: 1px solid var(--accent-color, #11998e); padding-bottom: 5px; }
+        .template-minimal .resume-header { border-bottom: 1px solid #e5e7eb; }
+        .template-minimal .resume-section h3 { color: #1f2937; text-transform: none; letter-spacing: normal; font-weight: 600; }
+        .template-creative .resume-header { background: var(--accent-color, #11998e); color: white; padding: 30px; border-radius: 8px; margin-bottom: 20px; }
+        .template-creative .resume-header h1 { color: white; }
+        .template-creative .resume-header p { color: rgba(255,255,255,0.9); }
+        .template-creative .resume-section h3 { color: var(--accent-color, #11998e); background: rgba(17,153,142,0.1); padding: 8px 12px; border-radius: 4px; }
+        /* Dark mode for new elements */
+        body.dark-theme select { background: #1a202c; border-color: #4a5568; color: #e2e8f0; }
+        body.dark-theme .color-btn.active { border-color: #e2e8f0; box-shadow: 0 0 0 2px #1a202c, 0 0 0 4px #e2e8f0; }
+        body.dark-theme .toggle-checkbox { color: #a0aec0; }
     </style>
 </head>
 <body>
@@ -288,6 +314,42 @@
                     <input type="text" id="skills" placeholder="JavaScript, Python, React, Node.js" oninput="updateResume()">
                 </div>
                 
+                <!-- NEW: Template Selector -->
+                <div class="form-group">
+                    <label>Resume Template</label>
+                    <select id="template" onchange="updateResume()">
+                        <option value="professional">👔 Professional (Classic)</option>
+                        <option value="modern">✨ Modern (Clean)</option>
+                        <option value="minimal">📄 Minimal (Simple)</option>
+                        <option value="creative">🎨 Creative (Colorful)</option>
+                    </select>
+                </div>
+                
+                <!-- NEW: Custom Accent Color -->
+                <div class="form-group">
+                    <label>Accent Color</label>
+                    <div class="color-picker">
+                        <button type="button" class="color-btn active" data-color="#11998e" style="background: #11998e;" onclick="setAccentColor('#11998e')"></button>
+                        <button type="button" class="color-btn" data-color="#6366f1" style="background: #6366f1;" onclick="setAccentColor('#6366f1')"></button>
+                        <button type="button" class="color-btn" data-color="#ec4899" style="background: #ec4899;" onclick="setAccentColor('#ec4899')"></button>
+                        <button type="button" class="color-btn" data-color="#f59e0b" style="background: #f59e0b;" onclick="setAccentColor('#f59e0b')"></button>
+                        <button type="button" class="color-btn" data-color="#3b82f6" style="background: #3b82f6;" onclick="setAccentColor('#3b82f6')"></button>
+                        <button type="button" class="color-btn" data-color="#10b981" style="background: #10b981;" onclick="setAccentColor('#10b981')"></button>
+                        <input type="color" id="customColor" value="#11998e" onchange="setAccentColor(this.value)" title="Custom color">
+                    </div>
+                </div>
+                
+                <!-- NEW: Section Toggles -->
+                <div class="form-group">
+                    <label>Show Sections</label>
+                    <div class="toggle-sections">
+                        <label class="toggle-checkbox"><input type="checkbox" id="showSummary" checked onchange="updateResume()"> Summary</label>
+                        <label class="toggle-checkbox"><input type="checkbox" id="showExperience" checked onchange="updateResume()"> Experience</label>
+                        <label class="toggle-checkbox"><input type="checkbox" id="showEducation" checked onchange="updateResume()"> Education</label>
+                        <label class="toggle-checkbox"><input type="checkbox" id="showSkills" checked onchange="updateResume()"> Skills</label>
+                    </div>
+                </div>
+                
                 <button class="btn btn-primary" onclick="downloadJSON()">💾 Download JSON</button>
                 <button class="btn btn-secondary" onclick="loadExample()">📋 Load Example</button>
                 <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importJSON(event)">
@@ -320,13 +382,19 @@
     </div>
     
     <script>
+        // Global accent color
+        let currentAccentColor = localStorage.getItem('accentColor') || '#11998e';
+
         // Load saved data on page load
         document.addEventListener('DOMContentLoaded', () => {
             loadSavedData();
+            loadTemplateSettings();
             if (localStorage.getItem('darkTheme') === 'true') {
                 document.body.classList.add('dark-theme');
                 document.getElementById('themeBtn').textContent = '☀️ Toggle Light Mode';
             }
+            // Apply saved accent color
+            setAccentColor(currentAccentColor, false);
         });
         
         function updateResume() {
@@ -338,8 +406,17 @@
                 summary: document.getElementById('summary').value,
                 experience: document.getElementById('experience').value,
                 education: document.getElementById('education').value,
-                skills: document.getElementById('skills').value.split(',').map(s => s.trim()).filter(s => s)
+                skills: document.getElementById('skills').value.split(',').map(s => s.trim()).filter(s => s),
+                template: document.getElementById('template').value,
+                accentColor: currentAccentColor,
+                showSummary: document.getElementById('showSummary').checked,
+                showExperience: document.getElementById('showExperience').checked,
+                showEducation: document.getElementById('showEducation').checked,
+                showSkills: document.getElementById('showSkills').checked
             };
+            
+            const template = data.template || 'professional';
+            const previewEl = document.getElementById('resumePreview');
             
             // Update preview
             let previewHTML = '';
@@ -357,7 +434,7 @@
                 `;
             }
             
-            if (data.summary) {
+            if (data.summary && data.showSummary) {
                 previewHTML += `
                     <div class="resume-section">
                         <h3>Summary</h3>
@@ -366,7 +443,7 @@
                 `;
             }
             
-            if (data.experience) {
+            if (data.experience && data.showExperience) {
                 previewHTML += `
                     <div class="resume-section">
                         <h3>Experience</h3>
@@ -375,7 +452,7 @@
                 `;
             }
             
-            if (data.education) {
+            if (data.education && data.showEducation) {
                 previewHTML += `
                     <div class="resume-section">
                         <h3>Education</h3>
@@ -384,7 +461,7 @@
                 `;
             }
             
-            if (data.skills.length > 0) {
+            if (data.skills.length > 0 && data.showSkills) {
                 previewHTML += `
                     <div class="resume-section">
                         <h3>Skills</h3>
@@ -394,7 +471,9 @@
             }
             
             if (previewHTML) {
-                document.getElementById('resumePreview').innerHTML = previewHTML;
+                previewEl.innerHTML = previewHTML;
+                previewEl.className = `resume-preview template-${template}`;
+                previewEl.style.setProperty('--accent-color', data.accentColor);
             }
             
             // Update JSON output
@@ -420,6 +499,33 @@
             }
         }
         
+        function loadTemplateSettings() {
+            const saved = localStorage.getItem('resume-data');
+            if (saved) {
+                const data = JSON.parse(saved);
+                if (data.template) document.getElementById('template').value = data.template;
+                if (data.showSummary !== undefined) document.getElementById('showSummary').checked = data.showSummary;
+                if (data.showExperience !== undefined) document.getElementById('showExperience').checked = data.showExperience;
+                if (data.showEducation !== undefined) document.getElementById('showEducation').checked = data.showEducation;
+                if (data.showSkills !== undefined) document.getElementById('showSkills').checked = data.showSkills;
+                if (data.accentColor) currentAccentColor = data.accentColor;
+            }
+        }
+        
+        function setAccentColor(color, update = true) {
+            currentAccentColor = color;
+            localStorage.setItem('accentColor', color);
+            document.getElementById('customColor').value = color;
+            
+            // Update active button
+            document.querySelectorAll('.color-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.color === color) btn.classList.add('active');
+            });
+            
+            if (update) updateResume();
+        }
+        
         function downloadJSON() {
             const data = {
                 fullName: document.getElementById('fullName').value,
@@ -429,7 +535,13 @@
                 summary: document.getElementById('summary').value,
                 experience: document.getElementById('experience').value,
                 education: document.getElementById('education').value,
-                skills: document.getElementById('skills').value.split(',').map(s => s.trim()).filter(s => s)
+                skills: document.getElementById('skills').value.split(',').map(s => s.trim()).filter(s => s),
+                template: document.getElementById('template').value,
+                accentColor: currentAccentColor,
+                showSummary: document.getElementById('showSummary').checked,
+                showExperience: document.getElementById('showExperience').checked,
+                showEducation: document.getElementById('showEducation').checked,
+                showSkills: document.getElementById('showSkills').checked
             };
             
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -473,6 +585,12 @@
                     document.getElementById('experience').value = data.experience || '';
                     document.getElementById('education').value = data.education || '';
                     document.getElementById('skills').value = Array.isArray(data.skills) ? data.skills.join(', ') : data.skills || '';
+                    if (data.template) document.getElementById('template').value = data.template;
+                    if (data.accentColor) setAccentColor(data.accentColor, false);
+                    if (data.showSummary !== undefined) document.getElementById('showSummary').checked = data.showSummary;
+                    if (data.showExperience !== undefined) document.getElementById('showExperience').checked = data.showExperience;
+                    if (data.showEducation !== undefined) document.getElementById('showEducation').checked = data.showEducation;
+                    if (data.showSkills !== undefined) document.getElementById('showSkills').checked = data.showSkills;
                     updateResume();
                     showToast('✅ Resume imported successfully!', 'success');
                 } catch (err) {
@@ -493,6 +611,8 @@
         
         // Print resume
         function printResume() {
+            const template = document.getElementById('template').value;
+            const accentColor = currentAccentColor;
             const printWindow = window.open('', '_blank');
             const resumeContent = document.getElementById('resumePreview').innerHTML;
             printWindow.document.write(`
@@ -504,25 +624,32 @@
                     <style>
                         * { margin: 0; padding: 0; box-sizing: border-box; }
                         body { font-family: 'Inter', sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; }
-                        .resume-header { text-align: center; padding-bottom: 20px; border-bottom: 2px solid #11998e; margin-bottom: 20px; }
+                        .resume-header { text-align: center; padding-bottom: 20px; border-bottom: 2px solid ${accentColor}; margin-bottom: 20px; }
                         .resume-header h1 { font-size: 1.8em; color: #1f2937; margin-bottom: 5px; }
                         .resume-header p { color: #6b7280; }
                         .resume-section { margin-bottom: 20px; }
-                        .resume-section h3 { color: #11998e; font-size: 1.1em; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
+                        .resume-section h3 { color: ${accentColor}; font-size: 1.1em; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
                         .resume-section p { color: #4b5563; line-height: 1.6; margin-bottom: 8px; }
+                        /* Template styles for print */
+                        .template-modern .resume-header { border-bottom: 3px solid ${accentColor}; }
+                        .template-modern .resume-section h3 { text-transform: none; letter-spacing: normal; border-bottom: 1px solid ${accentColor}; padding-bottom: 5px; }
+                        .template-minimal .resume-header { border-bottom: 1px solid #e5e7eb; }
+                        .template-minimal .resume-section h3 { color: #1f2937; text-transform: none; letter-spacing: normal; font-weight: 600; }
+                        .template-creative .resume-header { background: ${accentColor}; color: white; padding: 30px; border-radius: 8px; margin-bottom: 20px; }
+                        .template-creative .resume-header h1 { color: white; }
+                        .template-creative .resume-header p { color: rgba(255,255,255,0.9); }
+                        .template-creative .resume-section h3 { color: ${accentColor}; background: rgba(17,153,142,0.1); padding: 8px 12px; border-radius: 4px; }
                         @media print { body { padding: 0; } }
                     </style>
                 </head>
-                <body>
+                <body class="template-${template}">
                     ${resumeContent}
                 </body>
                 </html>
             `);
             printWindow.document.close();
             printWindow.focus();
-            setTimeout(() => {
-                printWindow.print();
-            }, 250);
+            setTimeout(() => { printWindow.print(); }, 250);
         }
         
         // Theme toggle
@@ -559,28 +686,3 @@
     </script>
 </body>
 </html>
-<script>
-// Undo/Redo history
-const history = { past: [], future: [] };
-const saveState = () => {
-    const state = document.querySelector('textarea, input')?.value;
-    if (state) history.past.push(state);
-};
-document.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-        e.preventDefault();
-        if (e.shiftKey && history.future.length) {
-            // Redo
-            const state = history.future.pop();
-            history.past.push(document.querySelector('textarea, input')?.value);
-            if (document.querySelector('textarea, input')) document.querySelector('textarea, input').value = state;
-        } else if (history.past.length) {
-            // Undo
-            const state = history.past.pop();
-            history.future.push(document.querySelector('textarea, input')?.value);
-            if (document.querySelector('textarea, input')) document.querySelector('textarea, input').value = state;
-        }
-    }
-});
-document.addEventListener('input', saveState);
-</script>
