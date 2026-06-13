@@ -686,3 +686,278 @@
     </script>
 </body>
 </html>
+
+<!-- Interactive Tutorial Feature -->
+<div id="tutorial-overlay" class="tutorial-overlay hidden">
+    <div class="tutorial-spotlight"></div>
+    <div class="tutorial-tooltip" id="tutorial-tooltip">
+        <div class="tutorial-content">
+            <h3 id="tutorial-title">Welcome!</h3>
+            <p id="tutorial-text">Let's take a quick tour.</p>
+            <div class="tutorial-progress">
+                <span id="tutorial-step">1</span> / <span id="tutorial-total">5</span>
+            </div>
+        </div>
+        <div class="tutorial-actions">
+            <button id="tutorial-prev" class="tutorial-btn secondary">← Back</button>
+            <button id="tutorial-next" class="tutorial-btn primary">Next →</button>
+            <button id="tutorial-skip" class="tutorial-btn text">Skip Tour</button>
+        </div>
+    </div>
+</div>
+
+<style>
+.tutorial-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10000;
+    background: rgba(0,0,0,0.7);
+    transition: opacity 0.3s;
+}
+.tutorial-overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+.tutorial-spotlight {
+    position: absolute;
+    border-radius: 8px;
+    box-shadow: 0 0 0 9999px rgba(0,0,0,0.7);
+    transition: all 0.3s ease;
+    pointer-events: none;
+}
+.tutorial-tooltip {
+    position: absolute;
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    max-width: 320px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    z-index: 10001;
+    transition: all 0.3s ease;
+}
+.tutorial-tooltip h3 {
+    margin: 0 0 10px 0;
+    color: #11998e;
+    font-size: 1.2em;
+}
+.tutorial-tooltip p {
+    margin: 0 0 15px 0;
+    color: #4b5563;
+    line-height: 1.5;
+}
+.tutorial-progress {
+    font-size: 0.85em;
+    color: #9ca3af;
+    margin-bottom: 15px;
+}
+.tutorial-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.tutorial-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: all 0.2s;
+}
+.tutorial-btn.primary {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    color: white;
+}
+.tutorial-btn.secondary {
+    background: #f3f4f6;
+    color: #4b5563;
+}
+.tutorial-btn.text {
+    background: transparent;
+    color: #9ca3af;
+    text-decoration: underline;
+}
+.tutorial-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.tutorial-launch-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    color: white;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(17,153,142,0.4);
+    transition: all 0.2s;
+    z-index: 9999;
+}
+.tutorial-launch-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(17,153,142,0.5);
+}
+.dark-theme .tutorial-tooltip {
+    background: #1f2937;
+    color: #e5e7eb;
+}
+.dark-theme .tutorial-tooltip p {
+    color: #9ca3af;
+}
+.dark-theme .tutorial-btn.secondary {
+    background: #374151;
+    color: #e5e7eb;
+}
+</style>
+
+<script>
+// Interactive Tutorial System
+(function() {
+    const tutorialSteps = [
+        {
+            element: 'header h1',
+            title: '👋 Welcome to Resume Builder!',
+            text: 'Create beautiful, professional resumes from JSON. Let\'s show you around.',
+            position: 'bottom'
+        },
+        {
+            element: '.editor-panel',
+            title: '📝 Edit Your Information',
+            text: 'Fill in your details here. The preview updates automatically as you type.',
+            position: 'right'
+        },
+        {
+            element: '.preview-panel',
+            title: '👁️ Live Preview',
+            text: 'See how your resume looks in real-time. It updates instantly!',
+            position: 'left'
+        },
+        {
+            element: '.btn-primary',
+            title: '💾 Save & Export',
+            text: 'Save your work or export as JSON to use later. Your data is stored locally.',
+            position: 'top'
+        },
+        {
+            element: '.json-output',
+            title: '📋 JSON Output',
+            text: 'Copy this JSON to share your resume or import it later. You\'re all set!',
+            position: 'top'
+        }
+    ];
+    
+    let currentStep = 0;
+    let isActive = false;
+    
+    const overlay = document.getElementById('tutorial-overlay');
+    const spotlight = overlay.querySelector('.tutorial-spotlight');
+    const tooltip = document.getElementById('tutorial-tooltip');
+    const titleEl = document.getElementById('tutorial-title');
+    const textEl = document.getElementById('tutorial-text');
+    const stepEl = document.getElementById('tutorial-step');
+    const totalEl = document.getElementById('tutorial-total');
+    
+    function updateSpotlight(element) {
+        const el = document.querySelector(element);
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
+        spotlight.style.top = (rect.top - 8) + 'px';
+        spotlight.style.left = (rect.left - 8) + 'px';
+        spotlight.style.width = (rect.width + 16) + 'px';
+        spotlight.style.height = (rect.height + 16) + 'px';
+    }
+    
+    function updateTooltip(step) {
+        const el = document.querySelector(step.element);
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
+        
+        titleEl.textContent = step.title;
+        textEl.textContent = step.text;
+        stepEl.textContent = currentStep + 1;
+        totalEl.textContent = tutorialSteps.length;
+        
+        // Position tooltip
+        let top = rect.bottom + 20;
+        let left = rect.left + rect.width / 2 - 160;
+        
+        if (step.position === 'top') {
+            top = rect.top - tooltip.offsetHeight - 20;
+        } else if (step.position === 'left') {
+            left = rect.left - tooltip.offsetWidth - 20;
+            top = rect.top + rect.height / 2 - tooltip.offsetHeight / 2;
+        } else if (step.position === 'right') {
+            left = rect.right + 20;
+            top = rect.top + rect.height / 2 - tooltip.offsetHeight / 2;
+        }
+        
+        // Keep in viewport
+        left = Math.max(10, Math.min(left, window.innerWidth - tooltip.offsetWidth - 10));
+        top = Math.max(10, Math.min(top, window.innerHeight - tooltip.offsetHeight - 10));
+        
+        tooltip.style.top = top + 'px';
+        tooltip.style.left = left + 'px';
+    }
+    
+    function showStep(index) {
+        if (index < 0 || index >= tutorialSteps.length) return;
+        currentStep = index;
+        updateSpotlight(tutorialSteps[index].element);
+        updateTooltip(tutorialSteps[index]);
+        
+        document.getElementById('tutorial-prev').style.display = index === 0 ? 'none' : 'inline-block';
+        document.getElementById('tutorial-next').textContent = index === tutorialSteps.length - 1 ? 'Finish 🎉' : 'Next →';
+    }
+    
+    function startTutorial() {
+        isActive = true;
+        overlay.classList.remove('hidden');
+        showStep(0);
+    }
+    
+    function endTutorial() {
+        isActive = false;
+        overlay.classList.add('hidden');
+        localStorage.setItem('tutorial-completed', 'true');
+    }
+    
+    // Event listeners
+    document.getElementById('tutorial-next').addEventListener('click', () => {
+        if (currentStep < tutorialSteps.length - 1) {
+            showStep(currentStep + 1);
+        } else {
+            endTutorial();
+        }
+    });
+    
+    document.getElementById('tutorial-prev').addEventListener('click', () => {
+        if (currentStep > 0) showStep(currentStep - 1);
+    });
+    
+    document.getElementById('tutorial-skip').addEventListener('click', endTutorial);
+    
+    // Create launch button
+    const launchBtn = document.createElement('button');
+    launchBtn.className = 'tutorial-launch-btn';
+    launchBtn.innerHTML = '❓';
+    launchBtn.title = 'Start Tutorial';
+    launchBtn.onclick = startTutorial;
+    document.body.appendChild(launchBtn);
+    
+    // Auto-start on first visit
+    if (!localStorage.getItem('tutorial-completed')) {
+        setTimeout(startTutorial, 1000);
+    }
+    
+    // Update on resize
+    window.addEventListener('resize', () => {
+        if (isActive) showStep(currentStep);
+    });
+})();
+</script>
