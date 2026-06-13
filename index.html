@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
-<head><link rel="manifest" href="manifest.json"><script>if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js")</script><link rel="manifest" href="manifest.json"><script>if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js")</script><link rel="manifest" href="manifest.json"><script>if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js")</script><link rel="manifest" href="manifest.json"><script>if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js")</script>
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Resume Builder JSON - Create Professional Resumes</title>
+    <link rel="manifest" href="manifest.json">
+    <script>if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js")</script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -89,6 +91,10 @@
             background: #f3f4f6;
             color: #4b5563;
         }
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 0.85em;
+        }
         .preview-panel {
             background: white;
             border-radius: 16px;
@@ -159,6 +165,76 @@
         @media (max-width: 768px) {
             .builder { grid-template-columns: 1fr; }
         }
+        /* Dark theme styles */
+        body.dark-theme {
+            background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+        }
+        body.dark-theme .editor-panel,
+        body.dark-theme .preview-panel {
+            background: #2d3748;
+            color: #e2e8f0;
+        }
+        body.dark-theme .editor-panel h2,
+        body.dark-theme .preview-panel h2,
+        body.dark-theme .preview-panel h3 {
+            color: #e2e8f0;
+        }
+        body.dark-theme .form-group label {
+            color: #a0aec0;
+        }
+        body.dark-theme .form-group input,
+        body.dark-theme .form-group textarea {
+            background: #1a202c;
+            border-color: #4a5568;
+            color: #e2e8f0;
+        }
+        body.dark-theme .form-group input:focus,
+        body.dark-theme .form-group textarea:focus {
+            border-color: #38ef7d;
+        }
+        body.dark-theme .resume-preview {
+            background: #1a202c;
+            border-color: #4a5568;
+        }
+        body.dark-theme .json-output {
+            background: #1a202c;
+            color: #38ef7d;
+        }
+        body.dark-theme .resume-header h1 { color: #e2e8f0; }
+        body.dark-theme .resume-header p { color: #a0aec0; }
+        body.dark-theme .resume-section h3 { color: #38ef7d; }
+        body.dark-theme .resume-section p { color: #cbd5e0; }
+        body.dark-theme .btn-secondary {
+            background: #4a5568;
+            color: #e2e8f0;
+        }
+        /* Print styles */
+        @media print {
+            body { background: white !important; }
+            .editor-panel { display: none; }
+            .preview-panel { box-shadow: none; }
+            .btn { display: none; }
+            footer { display: none; }
+        }
+        /* Toast notification */
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+        .toast {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            z-index: 1000;
+            animation: slideUp 0.3s ease-out;
+        }
+        .toast.success { background: #10b981; }
+        .toast.error { background: #ef4444; }
     </style>
 </head>
 <body>
@@ -214,6 +290,9 @@
                 
                 <button class="btn btn-primary" onclick="downloadJSON()">💾 Download JSON</button>
                 <button class="btn btn-secondary" onclick="loadExample()">📋 Load Example</button>
+                <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importJSON(event)">
+                <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">📁 Import JSON</button>
+                <button class="btn btn-primary" style="background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%); margin-top: 10px;" onclick="printResume()">🖨️ Print / Save as PDF</button>
             </div>
             
             <div class="preview-panel">
@@ -234,10 +313,22 @@
         
         <footer>
             <p>Made with 💡 by <a href="https://github.com/Agent-Lumi">Lumi</a> for @shalkith</p>
+            <p style="margin-top: 10px; font-size: 0.85em; opacity: 0.8;">
+                <button class="btn btn-small" onclick="toggleTheme()" id="themeBtn" style="padding: 5px 15px; font-size: 0.85em;">🌙 Toggle Dark Mode</button>
+            </p>
         </footer>
     </div>
     
     <script>
+        // Load saved data on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSavedData();
+            if (localStorage.getItem('darkTheme') === 'true') {
+                document.body.classList.add('dark-theme');
+                document.getElementById('themeBtn').textContent = '☀️ Toggle Light Mode';
+            }
+        });
+        
         function updateResume() {
             const data = {
                 fullName: document.getElementById('fullName').value,
@@ -257,11 +348,11 @@
                 previewHTML += `
                     <div class="resume-header">
                         <h1>${data.fullName}</h1>
-                        ${data.jobTitle ? `\u003cp\u003e${data.jobTitle}\u003c/p\u003e` : ''}
+                        ${data.jobTitle ? `<p>${data.jobTitle}</p>` : ''}
                         <p style="margin-top: 10px;">
                             ${data.email ? `📧 ${data.email}` : ''}
                             ${data.phone ? ` | 📱 ${data.phone}` : ''}
-                        </p\u003e
+                        </p>
                     </div>
                 `;
             }
@@ -270,7 +361,7 @@
                 previewHTML += `
                     <div class="resume-section">
                         <h3>Summary</h3>
-                        <p>${data.summary}\u003c/p\u003e
+                        <p>${data.summary}</p>
                     </div>
                 `;
             }
@@ -279,7 +370,7 @@
                 previewHTML += `
                     <div class="resume-section">
                         <h3>Experience</h3>
-                        <p>${data.experience.replace(/\n/g, '\u003cbr\u003e')}\u003c/p\u003e
+                        <p>${data.experience.replace(/\n/g, '<br>')}</p>
                     </div>
                 `;
             }
@@ -288,7 +379,7 @@
                 previewHTML += `
                     <div class="resume-section">
                         <h3>Education</h3>
-                        <p>${data.education.replace(/\n/g, '\u003cbr\u003e')}\u003c/p\u003e
+                        <p>${data.education.replace(/\n/g, '<br>')}</p>
                     </div>
                 `;
             }
@@ -297,7 +388,7 @@
                 previewHTML += `
                     <div class="resume-section">
                         <h3>Skills</h3>
-                        <p>${data.skills.join(' • ')}\u003c/p\u003e
+                        <p>${data.skills.join(' • ')}</p>
                     </div>
                 `;
             }
@@ -308,6 +399,25 @@
             
             // Update JSON output
             document.getElementById('jsonOutput').textContent = JSON.stringify(data, null, 2);
+            
+            // Auto-save to localStorage
+            localStorage.setItem('resume-data', JSON.stringify(data));
+        }
+        
+        function loadSavedData() {
+            const saved = localStorage.getItem('resume-data');
+            if (saved) {
+                const data = JSON.parse(saved);
+                document.getElementById('fullName').value = data.fullName || '';
+                document.getElementById('jobTitle').value = data.jobTitle || '';
+                document.getElementById('email').value = data.email || '';
+                document.getElementById('phone').value = data.phone || '';
+                document.getElementById('summary').value = data.summary || '';
+                document.getElementById('experience').value = data.experience || '';
+                document.getElementById('education').value = data.education || '';
+                document.getElementById('skills').value = Array.isArray(data.skills) ? data.skills.join(', ') : data.skills || '';
+                updateResume();
+            }
         }
         
         function downloadJSON() {
@@ -329,6 +439,7 @@
             a.download = 'resume.json';
             a.click();
             URL.revokeObjectURL(url);
+            showToast('✅ JSON downloaded successfully!', 'success');
         }
         
         function loadExample() {
@@ -342,1619 +453,109 @@
             document.getElementById('skills').value = 'JavaScript, Python, React, Node.js, AWS, Docker, Kubernetes, PostgreSQL';
             
             updateResume();
+            showToast('✅ Example loaded!', 'success');
         }
+        
+        // Import JSON functionality
+        function importJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    document.getElementById('fullName').value = data.fullName || '';
+                    document.getElementById('jobTitle').value = data.jobTitle || '';
+                    document.getElementById('email').value = data.email || '';
+                    document.getElementById('phone').value = data.phone || '';
+                    document.getElementById('summary').value = data.summary || '';
+                    document.getElementById('experience').value = data.experience || '';
+                    document.getElementById('education').value = data.education || '';
+                    document.getElementById('skills').value = Array.isArray(data.skills) ? data.skills.join(', ') : data.skills || '';
+                    updateResume();
+                    showToast('✅ Resume imported successfully!', 'success');
+                } catch (err) {
+                    showToast('❌ Error importing file. Please check the JSON format.', 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+        
+        // Toast notification
+        function showToast(message, type = '') {
+            const toast = document.createElement('div');
+            toast.textContent = message;
+            toast.className = 'toast ' + type;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+        
+        // Print resume
+        function printResume() {
+            const printWindow = window.open('', '_blank');
+            const resumeContent = document.getElementById('resumePreview').innerHTML;
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Resume - Print</title>
+                    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+                    <style>
+                        * { margin: 0; padding: 0; box-sizing: border-box; }
+                        body { font-family: 'Inter', sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; }
+                        .resume-header { text-align: center; padding-bottom: 20px; border-bottom: 2px solid #11998e; margin-bottom: 20px; }
+                        .resume-header h1 { font-size: 1.8em; color: #1f2937; margin-bottom: 5px; }
+                        .resume-header p { color: #6b7280; }
+                        .resume-section { margin-bottom: 20px; }
+                        .resume-section h3 { color: #11998e; font-size: 1.1em; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
+                        .resume-section p { color: #4b5563; line-height: 1.6; margin-bottom: 8px; }
+                        @media print { body { padding: 0; } }
+                    </style>
+                </head>
+                <body>
+                    ${resumeContent}
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+            printWindow.focus();
+            setTimeout(() => {
+                printWindow.print();
+            }, 250);
+        }
+        
+        // Theme toggle
+        function toggleTheme() {
+            document.body.classList.toggle('dark-theme');
+            const isDark = document.body.classList.contains('dark-theme');
+            localStorage.setItem('darkTheme', isDark);
+            document.getElementById('themeBtn').textContent = isDark ? '☀️ Toggle Light Mode' : '🌙 Toggle Dark Mode';
+        }
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case 's': 
+                        e.preventDefault(); 
+                        downloadJSON();
+                        break;
+                    case 'p': 
+                        e.preventDefault(); 
+                        printResume();
+                        break;
+                }
+            }
+        });
+        
+        // Offline indicator
+        const offlineIndicator = document.createElement('div');
+        offlineIndicator.textContent = '⚠️ Offline';
+        offlineIndicator.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#ff6b6b;color:white;text-align:center;padding:5px;display:none;z-index:1001;';
+        document.body.appendChild(offlineIndicator);
+        window.addEventListener('online', () => offlineIndicator.style.display = 'none');
+        window.addEventListener('offline', () => offlineIndicator.style.display = 'block');
     </script>
 </body>
 </html>
-<script>
-// Offline indicator
-const offlineIndicator = document.createElement('div');
-offlineIndicator.textContent = '⚠️ Offline';
-offlineIndicator.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#ff6b6b;color:white;text-align:center;padding:5px;display:none;';
-document.body.appendChild(offlineIndicator);
-window.addEventListener('online', () => offlineIndicator.style.display = 'none');
-window.addEventListener('offline', () => offlineIndicator.style.display = 'block');
-</script>
-<style>
-@media (max-width: 768px) {
-    .container { padding: 10px; }
-    h1 { font-size: 1.5rem; }
-    button { width: 100%; margin: 5px 0; }
-}
-</style>
-<script>
-// Keyboard shortcuts
-document.addEventListener('keydown', (e) => {
-    if (e.ctrlKey || e.metaKey) {
-        switch(e.key) {
-            case 's': e.preventDefault(); console.log('Save shortcut'); break;
-            case 'r': e.preventDefault(); location.reload(); break;
-            case 'f': e.preventDefault(); document.querySelector('input')?.focus(); break;
-        }
-    }
-});
-</script>
-<script>
-// Auto-save to localStorage
-const saveKey = 'app-data-' + location.pathname;
-const saveData = () => {
-    const data = { timestamp: Date.now(), inputs: {} };
-    document.querySelectorAll('input, textarea').forEach(el => {
-        data.inputs[el.id || el.name] = el.value;
-    });
-    localStorage.setItem(saveKey, JSON.stringify(data));
-};
-const loadData = () => {
-    const saved = localStorage.getItem(saveKey);
-    if (saved) {
-        const data = JSON.parse(saved);
-        Object.entries(data.inputs).forEach(([key, value]) => {
-            const el = document.getElementById(key) || document.querySelector('[name="' + key + '"]');
-            if (el) el.value = value;
-        });
-    }
-};
-document.addEventListener('input', saveData);
-document.addEventListener('DOMContentLoaded', loadData);
-</script>
-<script>
-// Request notification permission
-if ('Notification' in window && Notification.permission === 'default') {
-    Notification.requestPermission();
-}
-function notify(title, body) {
-    if (Notification.permission === 'granted') {
-        new Notification(title, { body });
-    }
-}
-</script>
-<script>
-// Import from file
-const importBtn = document.createElement('button');
-importBtn.textContent = '📁 Import';
-importBtn.onclick = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.onchange = (e) => {
-        const file = e.target.files[0];
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const textArea = document.querySelector('textarea');
-            if (textArea) textArea.value = e.target.result;
-        };
-        reader.readAsText(file);
-    };
-    input.click();
-};
-document.querySelector('.container')?.appendChild(importBtn);
-</script>
-<script>
-// Simple tutorial
-const tutorialSteps = [
-    { selector: 'h1', text: 'Welcome! This is the main title.' },
-    { selector: 'button', text: 'Click here to perform actions.' }
-];
-let currentStep = 0;
-function showTutorial() {
-    if (currentStep < tutorialSteps.length) {
-        const step = tutorialSteps[currentStep];
-        const el = document.querySelector(step.selector);
-        if (el) {
-            const tooltip = document.createElement('div');
-            tooltip.textContent = step.text;
-            tooltip.style.cssText = 'position:absolute;background:#6f42c1;color:white;padding:10px;border-radius:5px;z-index:1000;';
-            el.style.position = 'relative';
-            el.appendChild(tooltip);
-            setTimeout(() => tooltip.remove(), 3000);
-        }
-        currentStep++;
-    }
-}
-// Show tutorial on first visit
-if (!localStorage.getItem('tutorial-shown')) {
-    setTimeout(showTutorial, 1000);
-    localStorage.setItem('tutorial-shown', 'true');
-}
-</script>
-<script>
-// Auto-save to localStorage
-const saveKey = 'app-data-' + location.pathname;
-const saveData = () => {
-    const data = { timestamp: Date.now(), inputs: {} };
-    document.querySelectorAll('input, textarea').forEach(el => {
-        data.inputs[el.id || el.name] = el.value;
-    });
-    localStorage.setItem(saveKey, JSON.stringify(data));
-};
-const loadData = () => {
-    const saved = localStorage.getItem(saveKey);
-    if (saved) {
-        const data = JSON.parse(saved);
-        Object.entries(data.inputs).forEach(([key, value]) => {
-            const el = document.getElementById(key) || document.querySelector('[name="' + key + '"]');
-            if (el) el.value = value;
-        });
-    }
-};
-document.addEventListener('input', saveData);
-document.addEventListener('DOMContentLoaded', loadData);
-</script>
-<script>
-// Share functionality
-const shareBtn = document.createElement('button');
-shareBtn.textContent = '🔗 Share';
-shareBtn.style.cssText = 'position:fixed;bottom:20px;right:20px;padding:10px 20px;background:#6f42c1;color:white;border:none;border-radius:20px;cursor:pointer;';
-shareBtn.onclick = () => {
-    if (navigator.share) {
-        navigator.share({ title: document.title, url: location.href });
-    } else {
-        navigator.clipboard.writeText(location.href);
-        shareBtn.textContent = '✅ Copied!';
-        setTimeout(() => shareBtn.textContent = '🔗 Share', 2000);
-    }
-};
-document.body.appendChild(shareBtn);
-</script>
-<script>
-// Usage stats
-const stats = JSON.parse(localStorage.getItem('app-stats') || '{}');
-stats.visits = (stats.visits || 0) + 1;
-stats.lastVisit = new Date().toISOString();
-localStorage.setItem('app-stats', JSON.stringify(stats));
-console.log('Visits:', stats.visits);
-</script>
-<style>
-@media (max-width: 768px) {
-    .container { padding: 10px; }
-    h1 { font-size: 1.5rem; }
-    button { width: 100%; margin: 5px 0; }
-}
-</style>
-<script>
-// Auto-save to localStorage
-const saveKey = 'app-data-' + location.pathname;
-const saveData = () => {
-    const data = { timestamp: Date.now(), inputs: {} };
-    document.querySelectorAll('input, textarea').forEach(el => {
-        data.inputs[el.id || el.name] = el.value;
-    });
-    localStorage.setItem(saveKey, JSON.stringify(data));
-};
-const loadData = () => {
-    const saved = localStorage.getItem(saveKey);
-    if (saved) {
-        const data = JSON.parse(saved);
-        Object.entries(data.inputs).forEach(([key, value]) => {
-            const el = document.getElementById(key) || document.querySelector('[name="' + key + '"]');
-            if (el) el.value = value;
-        });
-    }
-};
-document.addEventListener('input', saveData);
-document.addEventListener('DOMContentLoaded', loadData);
-</script>
-<script>
-// Request notification permission
-if ('Notification' in window && Notification.permission === 'default') {
-    Notification.requestPermission();
-}
-function notify(title, body) {
-    if (Notification.permission === 'granted') {
-        new Notification(title, { body });
-    }
-}
-</script>
-<style>
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-.container { animation: fadeIn 0.3s ease-out; }
-button { transition: all 0.2s ease; }
-button:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
-</style>
-<script>
-// Usage stats
-const stats = JSON.parse(localStorage.getItem('app-stats') || '{}');
-stats.visits = (stats.visits || 0) + 1;
-stats.lastVisit = new Date().toISOString();
-localStorage.setItem('app-stats', JSON.stringify(stats));
-console.log('Visits:', stats.visits);
-</script>
-<style>
-@media (max-width: 768px) {
-    .container { padding: 10px; }
-    h1 { font-size: 1.5rem; }
-    button { width: 100%; margin: 5px 0; }
-}
-</style>
-<style>
-@media (max-width: 768px) {
-    .container { padding: 10px; }
-    h1 { font-size: 1.5rem; }
-    button { width: 100%; margin: 5px 0; }
-}
-</style>
-<script>
-// Import from file
-const importBtn = document.createElement('button');
-importBtn.textContent = '📁 Import';
-importBtn.onclick = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.onchange = (e) => {
-        const file = e.target.files[0];
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const textArea = document.querySelector('textarea');
-            if (textArea) textArea.value = e.target.result;
-        };
-        reader.readAsText(file);
-    };
-    input.click();
-};
-document.querySelector('.container')?.appendChild(importBtn);
-</script>
-<script>
-// Auto-save to localStorage
-const saveKey = 'app-data-' + location.pathname;
-const saveData = () => {
-    const data = { timestamp: Date.now(), inputs: {} };
-    document.querySelectorAll('input, textarea').forEach(el => {
-        data.inputs[el.id || el.name] = el.value;
-    });
-    localStorage.setItem(saveKey, JSON.stringify(data));
-};
-const loadData = () => {
-    const saved = localStorage.getItem(saveKey);
-    if (saved) {
-        const data = JSON.parse(saved);
-        Object.entries(data.inputs).forEach(([key, value]) => {
-            const el = document.getElementById(key) || document.querySelector('[name="' + key + '"]');
-            if (el) el.value = value;
-        });
-    }
-};
-document.addEventListener('input', saveData);
-document.addEventListener('DOMContentLoaded', loadData);
-</script>
-<script>
-// Offline indicator
-const offlineIndicator = document.createElement('div');
-offlineIndicator.textContent = '⚠️ Offline';
-offlineIndicator.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#ff6b6b;color:white;text-align:center;padding:5px;display:none;';
-document.body.appendChild(offlineIndicator);
-window.addEventListener('online', () => offlineIndicator.style.display = 'none');
-window.addEventListener('offline', () => offlineIndicator.style.display = 'block');
-</script>
-<script>
-// Request notification permission
-if ('Notification' in window && Notification.permission === 'default') {
-    Notification.requestPermission();
-}
-function notify(title, body) {
-    if (Notification.permission === 'granted') {
-        new Notification(title, { body });
-    }
-}
-</script>
-<style>
-@media (max-width: 768px) {
-    .container { padding: 10px; }
-    h1 { font-size: 1.5rem; }
-    button { width: 100%; margin: 5px 0; }
-}
-</style>
-<style>
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-.container { animation: fadeIn 0.3s ease-out; }
-button { transition: all 0.2s ease; }
-button:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
-</style>
-<script>
-// Keyboard shortcuts
-document.addEventListener('keydown', (e) => {
-    if (e.ctrlKey || e.metaKey) {
-        switch(e.key) {
-            case 's': e.preventDefault(); console.log('Save shortcut'); break;
-            case 'r': e.preventDefault(); location.reload(); break;
-            case 'f': e.preventDefault(); document.querySelector('input')?.focus(); break;
-        }
-    }
-});
-</script>
-<script>
-// Offline indicator
-const offlineIndicator = document.createElement('div');
-offlineIndicator.textContent = '⚠️ Offline';
-offlineIndicator.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#ff6b6b;color:white;text-align:center;padding:5px;display:none;';
-document.body.appendChild(offlineIndicator);
-window.addEventListener('online', () => offlineIndicator.style.display = 'none');
-window.addEventListener('offline', () => offlineIndicator.style.display = 'block');
-</script>
-<style>
-@media (max-width: 768px) {
-    .container { padding: 10px; }
-    h1 { font-size: 1.5rem; }
-    button { width: 100%; margin: 5px 0; }
-}
-</style>
-<style>
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-.container { animation: fadeIn 0.3s ease-out; }
-button { transition: all 0.2s ease; }
-button:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
-</style>
-<script>
-// Usage stats
-const stats = JSON.parse(localStorage.getItem('app-stats') || '{}');
-stats.visits = (stats.visits || 0) + 1;
-stats.lastVisit = new Date().toISOString();
-localStorage.setItem('app-stats', JSON.stringify(stats));
-console.log('Visits:', stats.visits);
-</script>
-<style>
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-.container { animation: fadeIn 0.3s ease-out; }
-button { transition: all 0.2s ease; }
-button:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
-</style>
-<script>
-// Undo/Redo history
-const history = { past: [], future: [] };
-const saveState = () => {
-    const state = document.querySelector('textarea, input')?.value;
-    if (state) history.past.push(state);
-};
-document.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-        e.preventDefault();
-        if (e.shiftKey && history.future.length) {
-            // Redo
-            const state = history.future.pop();
-            history.past.push(document.querySelector('textarea, input')?.value);
-            if (document.querySelector('textarea, input')) document.querySelector('textarea, input').value = state;
-        } else if (history.past.length) {
-            // Undo
-            const state = history.past.pop();
-            history.future.push(document.querySelector('textarea, input')?.value);
-            if (document.querySelector('textarea, input')) document.querySelector('textarea, input').value = state;
-        }
-    }
-});
-document.addEventListener('input', saveState);
-</script>
-<script>
-// Usage stats
-const stats = JSON.parse(localStorage.getItem('app-stats') || '{}');
-stats.visits = (stats.visits || 0) + 1;
-stats.lastVisit = new Date().toISOString();
-localStorage.setItem('app-stats', JSON.stringify(stats));
-console.log('Visits:', stats.visits);
-</script>
-<script>
-// Export functionality
-function exportData(format) {
-    const data = document.querySelector('textarea, input')?.value || document.body.innerText;
-    const blob = new Blob([data], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'export.' + format;
-    a.click();
-    URL.revokeObjectURL(url);
-}
-</script>
-<script>
-// Import from file
-const importBtn = document.createElement('button');
-importBtn.textContent = '📁 Import';
-importBtn.onclick = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.onchange = (e) => {
-        const file = e.target.files[0];
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const textArea = document.querySelector('textarea');
-            if (textArea) textArea.value = e.target.result;
-        };
-        reader.readAsText(file);
-    };
-    input.click();
-};
-document.querySelector('.container')?.appendChild(importBtn);
-</script>
-<script>
-// Simple tutorial
-const tutorialSteps = [
-    { selector: 'h1', text: 'Welcome! This is the main title.' },
-    { selector: 'button', text: 'Click here to perform actions.' }
-];
-let currentStep = 0;
-function showTutorial() {
-    if (currentStep < tutorialSteps.length) {
-        const step = tutorialSteps[currentStep];
-        const el = document.querySelector(step.selector);
-        if (el) {
-            const tooltip = document.createElement('div');
-            tooltip.textContent = step.text;
-            tooltip.style.cssText = 'position:absolute;background:#6f42c1;color:white;padding:10px;border-radius:5px;z-index:1000;';
-            el.style.position = 'relative';
-            el.appendChild(tooltip);
-            setTimeout(() => tooltip.remove(), 3000);
-        }
-        currentStep++;
-    }
-}
-// Show tutorial on first visit
-if (!localStorage.getItem('tutorial-shown')) {
-    setTimeout(showTutorial, 1000);
-    localStorage.setItem('tutorial-shown', 'true');
-}
-</script>
-<script>
-// Offline indicator
-const offlineIndicator = document.createElement('div');
-offlineIndicator.textContent = '⚠️ Offline';
-offlineIndicator.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#ff6b6b;color:white;text-align:center;padding:5px;display:none;';
-document.body.appendChild(offlineIndicator);
-window.addEventListener('online', () => offlineIndicator.style.display = 'none');
-window.addEventListener('offline', () => offlineIndicator.style.display = 'block');
-</script>
-<script>
-// Templates gallery
-const templates = [
-    { name: 'Default', apply: () => {} },
-    { name: 'Minimal', apply: () => document.body.style.fontFamily = 'system-ui, sans-serif' }
-];
-const templateSelect = document.createElement('select');
-templates.forEach(t => {
-    const opt = document.createElement('option');
-    opt.value = t.name;
-    opt.textContent = t.name;
-    templateSelect.appendChild(opt);
-});
-templateSelect.onchange = (e) => {
-    const template = templates.find(t => t.name === e.target.value);
-    if (template) template.apply();
-};
-document.querySelector('.container')?.appendChild(templateSelect);
-</script>
-<script>
-// Share functionality
-const shareBtn = document.createElement('button');
-shareBtn.textContent = '🔗 Share';
-shareBtn.style.cssText = 'position:fixed;bottom:20px;right:20px;padding:10px 20px;background:#6f42c1;color:white;border:none;border-radius:20px;cursor:pointer;';
-shareBtn.onclick = () => {
-    if (navigator.share) {
-        navigator.share({ title: document.title, url: location.href });
-    } else {
-        navigator.clipboard.writeText(location.href);
-        shareBtn.textContent = '✅ Copied!';
-        setTimeout(() => shareBtn.textContent = '🔗 Share', 2000);
-    }
-};
-document.body.appendChild(shareBtn);
-</script>
-<script>
-// Offline indicator
-const offlineIndicator = document.createElement('div');
-offlineIndicator.textContent = '⚠️ Offline';
-offlineIndicator.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#ff6b6b;color:white;text-align:center;padding:5px;display:none;';
-document.body.appendChild(offlineIndicator);
-window.addEventListener('online', () => offlineIndicator.style.display = 'none');
-window.addEventListener('offline', () => offlineIndicator.style.display = 'block');
-</script>
-<style>
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-.container { animation: fadeIn 0.3s ease-out; }
-button { transition: all 0.2s ease; }
-button:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
-</style>
-<script>
-// Share functionality
-const shareBtn = document.createElement('button');
-shareBtn.textContent = '🔗 Share';
-shareBtn.style.cssText = 'position:fixed;bottom:20px;right:20px;padding:10px 20px;background:#6f42c1;color:white;border:none;border-radius:20px;cursor:pointer;';
-shareBtn.onclick = () => {
-    if (navigator.share) {
-        navigator.share({ title: document.title, url: location.href });
-    } else {
-        navigator.clipboard.writeText(location.href);
-        shareBtn.textContent = '✅ Copied!';
-        setTimeout(() => shareBtn.textContent = '🔗 Share', 2000);
-    }
-};
-document.body.appendChild(shareBtn);
-</script>
-<script>
-// Undo/Redo history
-const history = { past: [], future: [] };
-const saveState = () => {
-    const state = document.querySelector('textarea, input')?.value;
-    if (state) history.past.push(state);
-};
-document.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-        e.preventDefault();
-        if (e.shiftKey && history.future.length) {
-            // Redo
-            const state = history.future.pop();
-            history.past.push(document.querySelector('textarea, input')?.value);
-            if (document.querySelector('textarea, input')) document.querySelector('textarea, input').value = state;
-        } else if (history.past.length) {
-            // Undo
-            const state = history.past.pop();
-            history.future.push(document.querySelector('textarea, input')?.value);
-            if (document.querySelector('textarea, input')) document.querySelector('textarea, input').value = state;
-        }
-    }
-});
-document.addEventListener('input', saveState);
-</script>
-<script>
-// Dark mode toggle
-const darkModeToggle = document.createElement('button');
-darkModeToggle.textContent = '🌙';
-darkModeToggle.style.cssText = 'position:fixed;top:20px;right:20px;background:none;border:none;font-size:24px;cursor:pointer;z-index:1000;';
-darkModeToggle.onclick = () => {
-    document.body.classList.toggle('dark-mode');
-    darkModeToggle.textContent = document.body.classList.contains('dark-mode') ? '☀️' : '🌙';
-    localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
-};
-document.body.appendChild(darkModeToggle);
-
-// Check saved preference
-if (localStorage.getItem('darkMode') === 'true') {
-    document.body.classList.add('dark-mode');
-    darkModeToggle.textContent = '☀️';
-}
-</script>
-<style>
-.dark-mode { background: #1a1a1a !important; color: #e0e0e0 !important; }
-.dark-mode .container { background: #2a2a2a !important; }
-</style>
-<script>
-// Keyboard shortcuts
-document.addEventListener('keydown', (e) => {
-    if (e.ctrlKey || e.metaKey) {
-        switch(e.key) {
-            case 's': e.preventDefault(); console.log('Save shortcut'); break;
-            case 'r': e.preventDefault(); location.reload(); break;
-            case 'f': e.preventDefault(); document.querySelector('input')?.focus(); break;
-        }
-    }
-});
-</script>
-<script>
-// Undo/Redo history
-const history = { past: [], future: [] };
-const saveState = () => {
-    const state = document.querySelector('textarea, input')?.value;
-    if (state) history.past.push(state);
-};
-document.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-        e.preventDefault();
-        if (e.shiftKey && history.future.length) {
-            // Redo
-            const state = history.future.pop();
-            history.past.push(document.querySelector('textarea, input')?.value);
-            if (document.querySelector('textarea, input')) document.querySelector('textarea, input').value = state;
-        } else if (history.past.length) {
-            // Undo
-            const state = history.past.pop();
-            history.future.push(document.querySelector('textarea, input')?.value);
-            if (document.querySelector('textarea, input')) document.querySelector('textarea, input').value = state;
-        }
-    }
-});
-document.addEventListener('input', saveState);
-</script>
-<style>
-@media (max-width: 768px) {
-    .container { padding: 10px; }
-    h1 { font-size: 1.5rem; }
-    button { width: 100%; margin: 5px 0; }
-}
-</style>
-<script>
-// API integration ready
-const API = {
-    async fetch(url, options = {}) {
-        const response = await fetch(url, options);
-        return response.json();
-    }
-};
-</script>
-<script>
-// API integration ready
-const API = {
-    async fetch(url, options = {}) {
-        const response = await fetch(url, options);
-        return response.json();
-    }
-};
-</script>
-<style>
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-.container { animation: fadeIn 0.3s ease-out; }
-button { transition: all 0.2s ease; }
-button:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
-</style>
-<script>
-// Simple tutorial
-const tutorialSteps = [
-    { selector: 'h1', text: 'Welcome! This is the main title.' },
-    { selector: 'button', text: 'Click here to perform actions.' }
-];
-let currentStep = 0;
-function showTutorial() {
-    if (currentStep < tutorialSteps.length) {
-        const step = tutorialSteps[currentStep];
-        const el = document.querySelector(step.selector);
-        if (el) {
-            const tooltip = document.createElement('div');
-            tooltip.textContent = step.text;
-            tooltip.style.cssText = 'position:absolute;background:#6f42c1;color:white;padding:10px;border-radius:5px;z-index:1000;';
-            el.style.position = 'relative';
-            el.appendChild(tooltip);
-            setTimeout(() => tooltip.remove(), 3000);
-        }
-        currentStep++;
-    }
-}
-// Show tutorial on first visit
-if (!localStorage.getItem('tutorial-shown')) {
-    setTimeout(showTutorial, 1000);
-    localStorage.setItem('tutorial-shown', 'true');
-}
-</script>
-<script>
-// Auto-save to localStorage
-const saveKey = 'app-data-' + location.pathname;
-const saveData = () => {
-    const data = { timestamp: Date.now(), inputs: {} };
-    document.querySelectorAll('input, textarea').forEach(el => {
-        data.inputs[el.id || el.name] = el.value;
-    });
-    localStorage.setItem(saveKey, JSON.stringify(data));
-};
-const loadData = () => {
-    const saved = localStorage.getItem(saveKey);
-    if (saved) {
-        const data = JSON.parse(saved);
-        Object.entries(data.inputs).forEach(([key, value]) => {
-            const el = document.getElementById(key) || document.querySelector('[name="' + key + '"]');
-            if (el) el.value = value;
-        });
-    }
-};
-document.addEventListener('input', saveData);
-document.addEventListener('DOMContentLoaded', loadData);
-</script>
-<script>
-// Undo/Redo history
-const history = { past: [], future: [] };
-const saveState = () => {
-    const state = document.querySelector('textarea, input')?.value;
-    if (state) history.past.push(state);
-};
-document.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-        e.preventDefault();
-        if (e.shiftKey && history.future.length) {
-            // Redo
-            const state = history.future.pop();
-            history.past.push(document.querySelector('textarea, input')?.value);
-            if (document.querySelector('textarea, input')) document.querySelector('textarea, input').value = state;
-        } else if (history.past.length) {
-            // Undo
-            const state = history.past.pop();
-            history.future.push(document.querySelector('textarea, input')?.value);
-            if (document.querySelector('textarea, input')) document.querySelector('textarea, input').value = state;
-        }
-    }
-});
-document.addEventListener('input', saveState);
-</script>
-<script>
-// Request notification permission
-if ('Notification' in window && Notification.permission === 'default') {
-    Notification.requestPermission();
-}
-function notify(title, body) {
-    if (Notification.permission === 'granted') {
-        new Notification(title, { body });
-    }
-}
-</script>
-<style>
-@media (max-width: 768px) {
-    .container { padding: 10px; }
-    h1 { font-size: 1.5rem; }
-    button { width: 100%; margin: 5px 0; }
-}
-</style>
-<script>
-// Templates gallery
-const templates = [
-    { name: 'Default', apply: () => {} },
-    { name: 'Minimal', apply: () => document.body.style.fontFamily = 'system-ui, sans-serif' }
-];
-const templateSelect = document.createElement('select');
-templates.forEach(t => {
-    const opt = document.createElement('option');
-    opt.value = t.name;
-    opt.textContent = t.name;
-    templateSelect.appendChild(opt);
-});
-templateSelect.onchange = (e) => {
-    const template = templates.find(t => t.name === e.target.value);
-    if (template) template.apply();
-};
-document.querySelector('.container')?.appendChild(templateSelect);
-</script>
-<script>
-// API integration ready
-const API = {
-    async fetch(url, options = {}) {
-        const response = await fetch(url, options);
-        return response.json();
-    }
-};
-</script>
-<script>
-// Export functionality
-function exportData(format) {
-    const data = document.querySelector('textarea, input')?.value || document.body.innerText;
-    const blob = new Blob([data], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'export.' + format;
-    a.click();
-    URL.revokeObjectURL(url);
-}
-</script>
-<script>
-// Templates gallery
-const templates = [
-    { name: 'Default', apply: () => {} },
-    { name: 'Minimal', apply: () => document.body.style.fontFamily = 'system-ui, sans-serif' }
-];
-const templateSelect = document.createElement('select');
-templates.forEach(t => {
-    const opt = document.createElement('option');
-    opt.value = t.name;
-    opt.textContent = t.name;
-    templateSelect.appendChild(opt);
-});
-templateSelect.onchange = (e) => {
-    const template = templates.find(t => t.name === e.target.value);
-    if (template) template.apply();
-};
-document.querySelector('.container')?.appendChild(templateSelect);
-</script>
-<script>
-// Usage stats
-const stats = JSON.parse(localStorage.getItem('app-stats') || '{}');
-stats.visits = (stats.visits || 0) + 1;
-stats.lastVisit = new Date().toISOString();
-localStorage.setItem('app-stats', JSON.stringify(stats));
-console.log('Visits:', stats.visits);
-</script>
-<script>
-// Undo/Redo history
-const history = { past: [], future: [] };
-const saveState = () => {
-    const state = document.querySelector('textarea, input')?.value;
-    if (state) history.past.push(state);
-};
-document.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-        e.preventDefault();
-        if (e.shiftKey && history.future.length) {
-            // Redo
-            const state = history.future.pop();
-            history.past.push(document.querySelector('textarea, input')?.value);
-            if (document.querySelector('textarea, input')) document.querySelector('textarea, input').value = state;
-        } else if (history.past.length) {
-            // Undo
-            const state = history.past.pop();
-            history.future.push(document.querySelector('textarea, input')?.value);
-            if (document.querySelector('textarea, input')) document.querySelector('textarea, input').value = state;
-        }
-    }
-});
-document.addEventListener('input', saveState);
-</script>
-<script>
-// Undo/Redo history
-const history = { past: [], future: [] };
-const saveState = () => {
-    const state = document.querySelector('textarea, input')?.value;
-    if (state) history.past.push(state);
-};
-document.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-        e.preventDefault();
-        if (e.shiftKey && history.future.length) {
-            // Redo
-            const state = history.future.pop();
-            history.past.push(document.querySelector('textarea, input')?.value);
-            if (document.querySelector('textarea, input')) document.querySelector('textarea, input').value = state;
-        } else if (history.past.length) {
-            // Undo
-            const state = history.past.pop();
-            history.future.push(document.querySelector('textarea, input')?.value);
-            if (document.querySelector('textarea, input')) document.querySelector('textarea, input').value = state;
-        }
-    }
-});
-document.addEventListener('input', saveState);
-</script>
-<script>
-// Usage stats
-const stats = JSON.parse(localStorage.getItem('app-stats') || '{}');
-stats.visits = (stats.visits || 0) + 1;
-stats.lastVisit = new Date().toISOString();
-localStorage.setItem('app-stats', JSON.stringify(stats));
-console.log('Visits:', stats.visits);
-</script>
-<script>
-// API integration ready
-const API = {
-    async fetch(url, options = {}) {
-        const response = await fetch(url, options);
-        return response.json();
-    }
-};
-</script>
-<script>
-// Usage stats
-const stats = JSON.parse(localStorage.getItem('app-stats') || '{}');
-stats.visits = (stats.visits || 0) + 1;
-stats.lastVisit = new Date().toISOString();
-localStorage.setItem('app-stats', JSON.stringify(stats));
-console.log('Visits:', stats.visits);
-</script>
-<script>
-// Share functionality
-const shareBtn = document.createElement('button');
-shareBtn.textContent = '🔗 Share';
-shareBtn.style.cssText = 'position:fixed;bottom:20px;right:20px;padding:10px 20px;background:#6f42c1;color:white;border:none;border-radius:20px;cursor:pointer;';
-shareBtn.onclick = () => {
-    if (navigator.share) {
-        navigator.share({ title: document.title, url: location.href });
-    } else {
-        navigator.clipboard.writeText(location.href);
-        shareBtn.textContent = '✅ Copied!';
-        setTimeout(() => shareBtn.textContent = '🔗 Share', 2000);
-    }
-};
-document.body.appendChild(shareBtn);
-</script>
-<script>
-// Simple tutorial
-const tutorialSteps = [
-    { selector: 'h1', text: 'Welcome! This is the main title.' },
-    { selector: 'button', text: 'Click here to perform actions.' }
-];
-let currentStep = 0;
-function showTutorial() {
-    if (currentStep < tutorialSteps.length) {
-        const step = tutorialSteps[currentStep];
-        const el = document.querySelector(step.selector);
-        if (el) {
-            const tooltip = document.createElement('div');
-            tooltip.textContent = step.text;
-            tooltip.style.cssText = 'position:absolute;background:#6f42c1;color:white;padding:10px;border-radius:5px;z-index:1000;';
-            el.style.position = 'relative';
-            el.appendChild(tooltip);
-            setTimeout(() => tooltip.remove(), 3000);
-        }
-        currentStep++;
-    }
-}
-// Show tutorial on first visit
-if (!localStorage.getItem('tutorial-shown')) {
-    setTimeout(showTutorial, 1000);
-    localStorage.setItem('tutorial-shown', 'true');
-}
-</script>
-<script>
-// Share functionality
-const shareBtn = document.createElement('button');
-shareBtn.textContent = '🔗 Share';
-shareBtn.style.cssText = 'position:fixed;bottom:20px;right:20px;padding:10px 20px;background:#6f42c1;color:white;border:none;border-radius:20px;cursor:pointer;';
-shareBtn.onclick = () => {
-    if (navigator.share) {
-        navigator.share({ title: document.title, url: location.href });
-    } else {
-        navigator.clipboard.writeText(location.href);
-        shareBtn.textContent = '✅ Copied!';
-        setTimeout(() => shareBtn.textContent = '🔗 Share', 2000);
-    }
-};
-document.body.appendChild(shareBtn);
-</script>
-<script>
-// Undo/Redo history
-const history = { past: [], future: [] };
-const saveState = () => {
-    const state = document.querySelector('textarea, input')?.value;
-    if (state) history.past.push(state);
-};
-document.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-        e.preventDefault();
-        if (e.shiftKey && history.future.length) {
-            // Redo
-            const state = history.future.pop();
-            history.past.push(document.querySelector('textarea, input')?.value);
-            if (document.querySelector('textarea, input')) document.querySelector('textarea, input').value = state;
-        } else if (history.past.length) {
-            // Undo
-            const state = history.past.pop();
-            history.future.push(document.querySelector('textarea, input')?.value);
-            if (document.querySelector('textarea, input')) document.querySelector('textarea, input').value = state;
-        }
-    }
-});
-document.addEventListener('input', saveState);
-</script>
-<script>
-// API integration ready
-const API = {
-    async fetch(url, options = {}) {
-        const response = await fetch(url, options);
-        return response.json();
-    }
-};
-</script>
-<script>
-// Auto-save to localStorage
-const saveKey = 'app-data-' + location.pathname;
-const saveData = () => {
-    const data = { timestamp: Date.now(), inputs: {} };
-    document.querySelectorAll('input, textarea').forEach(el => {
-        data.inputs[el.id || el.name] = el.value;
-    });
-    localStorage.setItem(saveKey, JSON.stringify(data));
-};
-const loadData = () => {
-    const saved = localStorage.getItem(saveKey);
-    if (saved) {
-        const data = JSON.parse(saved);
-        Object.entries(data.inputs).forEach(([key, value]) => {
-            const el = document.getElementById(key) || document.querySelector('[name="' + key + '"]');
-            if (el) el.value = value;
-        });
-    }
-};
-document.addEventListener('input', saveData);
-document.addEventListener('DOMContentLoaded', loadData);
-</script>
-<style>
-@media (max-width: 768px) {
-    .container { padding: 10px; }
-    h1 { font-size: 1.5rem; }
-    button { width: 100%; margin: 5px 0; }
-}
-</style>
-<script>
-// Export functionality
-function exportData(format) {
-    const data = document.querySelector('textarea, input')?.value || document.body.innerText;
-    const blob = new Blob([data], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'export.' + format;
-    a.click();
-    URL.revokeObjectURL(url);
-}
-</script>
-<script>
-// Undo/Redo history
-const history = { past: [], future: [] };
-const saveState = () => {
-    const state = document.querySelector('textarea, input')?.value;
-    if (state) history.past.push(state);
-};
-document.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-        e.preventDefault();
-        if (e.shiftKey && history.future.length) {
-            // Redo
-            const state = history.future.pop();
-            history.past.push(document.querySelector('textarea, input')?.value);
-            if (document.querySelector('textarea, input')) document.querySelector('textarea, input').value = state;
-        } else if (history.past.length) {
-            // Undo
-            const state = history.past.pop();
-            history.future.push(document.querySelector('textarea, input')?.value);
-            if (document.querySelector('textarea, input')) document.querySelector('textarea, input').value = state;
-        }
-    }
-});
-document.addEventListener('input', saveState);
-</script>
-<style>
-@media (max-width: 768px) {
-    .container { padding: 10px; }
-    h1 { font-size: 1.5rem; }
-    button { width: 100%; margin: 5px 0; }
-}
-</style>
-<script>
-// Keyboard shortcuts
-document.addEventListener('keydown', (e) => {
-    if (e.ctrlKey || e.metaKey) {
-        switch(e.key) {
-            case 's': e.preventDefault(); console.log('Save shortcut'); break;
-            case 'r': e.preventDefault(); location.reload(); break;
-            case 'f': e.preventDefault(); document.querySelector('input')?.focus(); break;
-        }
-    }
-});
-</script>
-<script>
-// Simple tutorial
-const tutorialSteps = [
-    { selector: 'h1', text: 'Welcome! This is the main title.' },
-    { selector: 'button', text: 'Click here to perform actions.' }
-];
-let currentStep = 0;
-function showTutorial() {
-    if (currentStep < tutorialSteps.length) {
-        const step = tutorialSteps[currentStep];
-        const el = document.querySelector(step.selector);
-        if (el) {
-            const tooltip = document.createElement('div');
-            tooltip.textContent = step.text;
-            tooltip.style.cssText = 'position:absolute;background:#6f42c1;color:white;padding:10px;border-radius:5px;z-index:1000;';
-            el.style.position = 'relative';
-            el.appendChild(tooltip);
-            setTimeout(() => tooltip.remove(), 3000);
-        }
-        currentStep++;
-    }
-}
-// Show tutorial on first visit
-if (!localStorage.getItem('tutorial-shown')) {
-    setTimeout(showTutorial, 1000);
-    localStorage.setItem('tutorial-shown', 'true');
-}
-</script>
-<script>
-// Auto-save to localStorage
-const saveKey = 'app-data-' + location.pathname;
-const saveData = () => {
-    const data = { timestamp: Date.now(), inputs: {} };
-    document.querySelectorAll('input, textarea').forEach(el => {
-        data.inputs[el.id || el.name] = el.value;
-    });
-    localStorage.setItem(saveKey, JSON.stringify(data));
-};
-const loadData = () => {
-    const saved = localStorage.getItem(saveKey);
-    if (saved) {
-        const data = JSON.parse(saved);
-        Object.entries(data.inputs).forEach(([key, value]) => {
-            const el = document.getElementById(key) || document.querySelector('[name="' + key + '"]');
-            if (el) el.value = value;
-        });
-    }
-};
-document.addEventListener('input', saveData);
-document.addEventListener('DOMContentLoaded', loadData);
-</script>
-<script>
-// Auto-save to localStorage
-const saveKey = 'app-data-' + location.pathname;
-const saveData = () => {
-    const data = { timestamp: Date.now(), inputs: {} };
-    document.querySelectorAll('input, textarea').forEach(el => {
-        data.inputs[el.id || el.name] = el.value;
-    });
-    localStorage.setItem(saveKey, JSON.stringify(data));
-};
-const loadData = () => {
-    const saved = localStorage.getItem(saveKey);
-    if (saved) {
-        const data = JSON.parse(saved);
-        Object.entries(data.inputs).forEach(([key, value]) => {
-            const el = document.getElementById(key) || document.querySelector('[name="' + key + '"]');
-            if (el) el.value = value;
-        });
-    }
-};
-document.addEventListener('input', saveData);
-document.addEventListener('DOMContentLoaded', loadData);
-</script>
-<style>
-@media (max-width: 768px) {
-    .container { padding: 10px; }
-    h1 { font-size: 1.5rem; }
-    button { width: 100%; margin: 5px 0; }
-}
-</style>
-<script>
-// Keyboard shortcuts
-document.addEventListener('keydown', (e) => {
-    if (e.ctrlKey || e.metaKey) {
-        switch(e.key) {
-            case 's': e.preventDefault(); console.log('Save shortcut'); break;
-            case 'r': e.preventDefault(); location.reload(); break;
-            case 'f': e.preventDefault(); document.querySelector('input')?.focus(); break;
-        }
-    }
-});
-</script>
-<script>
-// Offline indicator
-const offlineIndicator = document.createElement('div');
-offlineIndicator.textContent = '⚠️ Offline';
-offlineIndicator.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#ff6b6b;color:white;text-align:center;padding:5px;display:none;';
-document.body.appendChild(offlineIndicator);
-window.addEventListener('online', () => offlineIndicator.style.display = 'none');
-window.addEventListener('offline', () => offlineIndicator.style.display = 'block');
-</script>
-<script>
-// Dark mode toggle
-const darkModeToggle = document.createElement('button');
-darkModeToggle.textContent = '🌙';
-darkModeToggle.style.cssText = 'position:fixed;top:20px;right:20px;background:none;border:none;font-size:24px;cursor:pointer;z-index:1000;';
-darkModeToggle.onclick = () => {
-    document.body.classList.toggle('dark-mode');
-    darkModeToggle.textContent = document.body.classList.contains('dark-mode') ? '☀️' : '🌙';
-    localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
-};
-document.body.appendChild(darkModeToggle);
-
-// Check saved preference
-if (localStorage.getItem('darkMode') === 'true') {
-    document.body.classList.add('dark-mode');
-    darkModeToggle.textContent = '☀️';
-}
-</script>
-<style>
-.dark-mode { background: #1a1a1a !important; color: #e0e0e0 !important; }
-.dark-mode .container { background: #2a2a2a !important; }
-</style>
-<script>
-// Simple tutorial
-const tutorialSteps = [
-    { selector: 'h1', text: 'Welcome! This is the main title.' },
-    { selector: 'button', text: 'Click here to perform actions.' }
-];
-let currentStep = 0;
-function showTutorial() {
-    if (currentStep < tutorialSteps.length) {
-        const step = tutorialSteps[currentStep];
-        const el = document.querySelector(step.selector);
-        if (el) {
-            const tooltip = document.createElement('div');
-            tooltip.textContent = step.text;
-            tooltip.style.cssText = 'position:absolute;background:#6f42c1;color:white;padding:10px;border-radius:5px;z-index:1000;';
-            el.style.position = 'relative';
-            el.appendChild(tooltip);
-            setTimeout(() => tooltip.remove(), 3000);
-        }
-        currentStep++;
-    }
-}
-// Show tutorial on first visit
-if (!localStorage.getItem('tutorial-shown')) {
-    setTimeout(showTutorial, 1000);
-    localStorage.setItem('tutorial-shown', 'true');
-}
-</script>
-<script>
-// Simple tutorial
-const tutorialSteps = [
-    { selector: 'h1', text: 'Welcome! This is the main title.' },
-    { selector: 'button', text: 'Click here to perform actions.' }
-];
-let currentStep = 0;
-function showTutorial() {
-    if (currentStep < tutorialSteps.length) {
-        const step = tutorialSteps[currentStep];
-        const el = document.querySelector(step.selector);
-        if (el) {
-            const tooltip = document.createElement('div');
-            tooltip.textContent = step.text;
-            tooltip.style.cssText = 'position:absolute;background:#6f42c1;color:white;padding:10px;border-radius:5px;z-index:1000;';
-            el.style.position = 'relative';
-            el.appendChild(tooltip);
-            setTimeout(() => tooltip.remove(), 3000);
-        }
-        currentStep++;
-    }
-}
-// Show tutorial on first visit
-if (!localStorage.getItem('tutorial-shown')) {
-    setTimeout(showTutorial, 1000);
-    localStorage.setItem('tutorial-shown', 'true');
-}
-</script>
-<script>
-// Auto-save to localStorage
-const saveKey = 'app-data-' + location.pathname;
-const saveData = () => {
-    const data = { timestamp: Date.now(), inputs: {} };
-    document.querySelectorAll('input, textarea').forEach(el => {
-        data.inputs[el.id || el.name] = el.value;
-    });
-    localStorage.setItem(saveKey, JSON.stringify(data));
-};
-const loadData = () => {
-    const saved = localStorage.getItem(saveKey);
-    if (saved) {
-        const data = JSON.parse(saved);
-        Object.entries(data.inputs).forEach(([key, value]) => {
-            const el = document.getElementById(key) || document.querySelector('[name="' + key + '"]');
-            if (el) el.value = value;
-        });
-    }
-};
-document.addEventListener('input', saveData);
-document.addEventListener('DOMContentLoaded', loadData);
-</script>
-<script>
-// Templates gallery
-const templates = [
-    { name: 'Default', apply: () => {} },
-    { name: 'Minimal', apply: () => document.body.style.fontFamily = 'system-ui, sans-serif' }
-];
-const templateSelect = document.createElement('select');
-templates.forEach(t => {
-    const opt = document.createElement('option');
-    opt.value = t.name;
-    opt.textContent = t.name;
-    templateSelect.appendChild(opt);
-});
-templateSelect.onchange = (e) => {
-    const template = templates.find(t => t.name === e.target.value);
-    if (template) template.apply();
-};
-document.querySelector('.container')?.appendChild(templateSelect);
-</script>
-<style>
-@media (max-width: 768px) {
-    .container { padding: 10px; }
-    h1 { font-size: 1.5rem; }
-    button { width: 100%; margin: 5px 0; }
-}
-</style>
-<script>
-// Export functionality
-function exportData(format) {
-    const data = document.querySelector('textarea, input')?.value || document.body.innerText;
-    const blob = new Blob([data], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'export.' + format;
-    a.click();
-    URL.revokeObjectURL(url);
-}
-</script>
-<script>
-// Undo/Redo history
-const history = { past: [], future: [] };
-const saveState = () => {
-    const state = document.querySelector('textarea, input')?.value;
-    if (state) history.past.push(state);
-};
-document.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-        e.preventDefault();
-        if (e.shiftKey && history.future.length) {
-            // Redo
-            const state = history.future.pop();
-            history.past.push(document.querySelector('textarea, input')?.value);
-            if (document.querySelector('textarea, input')) document.querySelector('textarea, input').value = state;
-        } else if (history.past.length) {
-            // Undo
-            const state = history.past.pop();
-            history.future.push(document.querySelector('textarea, input')?.value);
-            if (document.querySelector('textarea, input')) document.querySelector('textarea, input').value = state;
-        }
-    }
-});
-document.addEventListener('input', saveState);
-</script>
-<script>
-// Simple tutorial
-const tutorialSteps = [
-    { selector: 'h1', text: 'Welcome! This is the main title.' },
-    { selector: 'button', text: 'Click here to perform actions.' }
-];
-let currentStep = 0;
-function showTutorial() {
-    if (currentStep < tutorialSteps.length) {
-        const step = tutorialSteps[currentStep];
-        const el = document.querySelector(step.selector);
-        if (el) {
-            const tooltip = document.createElement('div');
-            tooltip.textContent = step.text;
-            tooltip.style.cssText = 'position:absolute;background:#6f42c1;color:white;padding:10px;border-radius:5px;z-index:1000;';
-            el.style.position = 'relative';
-            el.appendChild(tooltip);
-            setTimeout(() => tooltip.remove(), 3000);
-        }
-        currentStep++;
-    }
-}
-// Show tutorial on first visit
-if (!localStorage.getItem('tutorial-shown')) {
-    setTimeout(showTutorial, 1000);
-    localStorage.setItem('tutorial-shown', 'true');
-}
-</script>
-<script>
-// Templates gallery
-const templates = [
-    { name: 'Default', apply: () => {} },
-    { name: 'Minimal', apply: () => document.body.style.fontFamily = 'system-ui, sans-serif' }
-];
-const templateSelect = document.createElement('select');
-templates.forEach(t => {
-    const opt = document.createElement('option');
-    opt.value = t.name;
-    opt.textContent = t.name;
-    templateSelect.appendChild(opt);
-});
-templateSelect.onchange = (e) => {
-    const template = templates.find(t => t.name === e.target.value);
-    if (template) template.apply();
-};
-document.querySelector('.container')?.appendChild(templateSelect);
-</script>
-<script>
-// Offline indicator
-const offlineIndicator = document.createElement('div');
-offlineIndicator.textContent = '⚠️ Offline';
-offlineIndicator.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#ff6b6b;color:white;text-align:center;padding:5px;display:none;';
-document.body.appendChild(offlineIndicator);
-window.addEventListener('online', () => offlineIndicator.style.display = 'none');
-window.addEventListener('offline', () => offlineIndicator.style.display = 'block');
-</script>
-<script>
-// Request notification permission
-if ('Notification' in window && Notification.permission === 'default') {
-    Notification.requestPermission();
-}
-function notify(title, body) {
-    if (Notification.permission === 'granted') {
-        new Notification(title, { body });
-    }
-}
-</script>
-<script>
-// API integration ready
-const API = {
-    async fetch(url, options = {}) {
-        const response = await fetch(url, options);
-        return response.json();
-    }
-};
-</script>
-<script>
-// Auto-save to localStorage
-const saveKey = 'app-data-' + location.pathname;
-const saveData = () => {
-    const data = { timestamp: Date.now(), inputs: {} };
-    document.querySelectorAll('input, textarea').forEach(el => {
-        data.inputs[el.id || el.name] = el.value;
-    });
-    localStorage.setItem(saveKey, JSON.stringify(data));
-};
-const loadData = () => {
-    const saved = localStorage.getItem(saveKey);
-    if (saved) {
-        const data = JSON.parse(saved);
-        Object.entries(data.inputs).forEach(([key, value]) => {
-            const el = document.getElementById(key) || document.querySelector('[name="' + key + '"]');
-            if (el) el.value = value;
-        });
-    }
-};
-document.addEventListener('input', saveData);
-document.addEventListener('DOMContentLoaded', loadData);
-</script>
-<script>
-// Import from file
-const importBtn = document.createElement('button');
-importBtn.textContent = '📁 Import';
-importBtn.onclick = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.onchange = (e) => {
-        const file = e.target.files[0];
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const textArea = document.querySelector('textarea');
-            if (textArea) textArea.value = e.target.result;
-        };
-        reader.readAsText(file);
-    };
-    input.click();
-};
-document.querySelector('.container')?.appendChild(importBtn);
-</script>
-<script>
-// Templates gallery
-const templates = [
-    { name: 'Default', apply: () => {} },
-    { name: 'Minimal', apply: () => document.body.style.fontFamily = 'system-ui, sans-serif' }
-];
-const templateSelect = document.createElement('select');
-templates.forEach(t => {
-    const opt = document.createElement('option');
-    opt.value = t.name;
-    opt.textContent = t.name;
-    templateSelect.appendChild(opt);
-});
-templateSelect.onchange = (e) => {
-    const template = templates.find(t => t.name === e.target.value);
-    if (template) template.apply();
-};
-document.querySelector('.container')?.appendChild(templateSelect);
-</script>
-<script>
-// Import from file
-const importBtn = document.createElement('button');
-importBtn.textContent = '📁 Import';
-importBtn.onclick = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.onchange = (e) => {
-        const file = e.target.files[0];
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const textArea = document.querySelector('textarea');
-            if (textArea) textArea.value = e.target.result;
-        };
-        reader.readAsText(file);
-    };
-    input.click();
-};
-document.querySelector('.container')?.appendChild(importBtn);
-</script>
-<script>
-// Request notification permission
-if ('Notification' in window && Notification.permission === 'default') {
-    Notification.requestPermission();
-}
-function notify(title, body) {
-    if (Notification.permission === 'granted') {
-        new Notification(title, { body });
-    }
-}
-</script>
-<script>
-// Export functionality
-function exportData(format) {
-    const data = document.querySelector('textarea, input')?.value || document.body.innerText;
-    const blob = new Blob([data], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'export.' + format;
-    a.click();
-    URL.revokeObjectURL(url);
-}
-</script>
-<script>
-// Import from file
-const importBtn = document.createElement('button');
-importBtn.textContent = '📁 Import';
-importBtn.onclick = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.onchange = (e) => {
-        const file = e.target.files[0];
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const textArea = document.querySelector('textarea');
-            if (textArea) textArea.value = e.target.result;
-        };
-        reader.readAsText(file);
-    };
-    input.click();
-};
-document.querySelector('.container')?.appendChild(importBtn);
-</script>
-<script>
-// Import from file
-const importBtn = document.createElement('button');
-importBtn.textContent = '📁 Import';
-importBtn.onclick = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.onchange = (e) => {
-        const file = e.target.files[0];
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const textArea = document.querySelector('textarea');
-            if (textArea) textArea.value = e.target.result;
-        };
-        reader.readAsText(file);
-    };
-    input.click();
-};
-document.querySelector('.container')?.appendChild(importBtn);
-</script>
-<script>
-// Share functionality
-const shareBtn = document.createElement('button');
-shareBtn.textContent = '🔗 Share';
-shareBtn.style.cssText = 'position:fixed;bottom:20px;right:20px;padding:10px 20px;background:#6f42c1;color:white;border:none;border-radius:20px;cursor:pointer;';
-shareBtn.onclick = () => {
-    if (navigator.share) {
-        navigator.share({ title: document.title, url: location.href });
-    } else {
-        navigator.clipboard.writeText(location.href);
-        shareBtn.textContent = '✅ Copied!';
-        setTimeout(() => shareBtn.textContent = '🔗 Share', 2000);
-    }
-};
-document.body.appendChild(shareBtn);
-</script>
-<script>
-// Import from file
-const importBtn = document.createElement('button');
-importBtn.textContent = '📁 Import';
-importBtn.onclick = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.onchange = (e) => {
-        const file = e.target.files[0];
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const textArea = document.querySelector('textarea');
-            if (textArea) textArea.value = e.target.result;
-        };
-        reader.readAsText(file);
-    };
-    input.click();
-};
-document.querySelector('.container')?.appendChild(importBtn);
-</script>
-<script>
-// Export functionality
-function exportData(format) {
-    const data = document.querySelector('textarea, input')?.value || document.body.innerText;
-    const blob = new Blob([data], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'export.' + format;
-    a.click();
-    URL.revokeObjectURL(url);
-}
-</script>
-<script>
-// API integration ready
-const API = {
-    async fetch(url, options = {}) {
-        const response = await fetch(url, options);
-        return response.json();
-    }
-};
-</script>
-<script>
-// Export functionality
-function exportData(format) {
-    const data = document.querySelector('textarea, input')?.value || document.body.innerText;
-    const blob = new Blob([data], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'export.' + format;
-    a.click();
-    URL.revokeObjectURL(url);
-}
-</script>
