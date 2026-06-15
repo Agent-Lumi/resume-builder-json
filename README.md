@@ -1,6 +1,6 @@
 # 📄 Resume Builder JSON
 
-A simple, elegant web-based resume builder that creates professional resumes from JSON data. Features a live preview and instant JSON export.
+A simple, elegant web-based resume builder that creates professional resumes from JSON data. Features a live preview, PDF export, and beautiful templates.
 
 ## 🌟 Live Demo
 
@@ -9,10 +9,17 @@ A simple, elegant web-based resume builder that creates professional resumes fro
 ## ✨ Features
 
 - **Live Preview** - See your resume update in real-time as you type
-- **JSON Export** - Download your resume data as a structured JSON file
-- **Clean, Modern Design** - Beautiful gradient styling with professional resume layout
+- **PDF Export** - Download your resume as a professional PDF document
+- **JSON Export/Import** - Save and load your resume data as structured JSON
+- **Multiple Templates** - Choose from Professional, Modern, Minimal, or Creative styles
+- **Custom Accent Colors** - Personalize your resume with your preferred color scheme
+- **Print Support** - Print or save as PDF with Ctrl+P
+- **Dark Mode** - Toggle between light and dark themes
+- **Section Toggles** - Show/hide sections like Summary, Experience, Education, Skills
+- **Keyboard Shortcuts** - Quick actions with Ctrl+S (save), Ctrl+P (print), Ctrl+E (export PDF)
+- **PWA Support** - Install as a standalone app with offline support
+- **Auto-Save** - Your data is automatically saved to localStorage
 - **Responsive** - Works on desktop and mobile devices
-- **Example Data** - Load sample data with one click to see how it works
 - **No Backend Required** - Pure HTML/CSS/JavaScript, runs entirely in your browser
 
 ## 🚀 How to Use
@@ -26,9 +33,33 @@ A simple, elegant web-based resume builder that creates professional resumes fro
    - Work Experience
    - Education
    - Skills (comma-separated)
-3. **Watch the preview** - Your resume updates automatically as you type
-4. **Download JSON** - Click "💾 Download JSON" to save your resume data
-5. **Or load an example** - Click "📋 Load Example" to see a sample resume
+3. **Choose a template** - Select from Professional, Modern, Minimal, or Creative
+4. **Customize the color** - Pick your preferred accent color
+5. **Toggle sections** - Show or hide specific resume sections
+6. **Watch the preview** - Your resume updates automatically as you type
+7. **Export** - Download as PDF or JSON
+
+## 📤 Export Options
+
+### Export as PDF
+- Click the **📄 Export PDF** button
+- Uses html2pdf.js for high-quality PDF generation
+- A4 format with automatic page breaks
+
+### Print
+- Click the **🖨️ Print** button or press `Ctrl+P` (or `Cmd+P` on Mac)
+- Opens a print-friendly version in a new window
+- Use "Save as PDF" from your browser's print dialog
+
+### Save as JSON
+- Click the **💾 Download JSON** button or press `Ctrl+S`
+- Stores all your resume data including template and color preferences
+- Can be imported later to restore your work
+
+### Import JSON
+- Click the **📁 Import JSON** button
+- Select a previously saved JSON file
+- Restores all your resume data, settings, and preferences
 
 ## 📋 JSON Schema
 
@@ -40,10 +71,16 @@ Your resume data is structured as follows:
   "jobTitle": "Senior Software Engineer",
   "email": "jane.smith@example.com",
   "phone": "+1 (555) 123-4567",
-  "summary": "Experienced software engineer with 8+ years in full-stack development...",
-  "experience": "Senior Software Engineer - Tech Corp (2020-Present)\n• Led team of 5 developers...",
+  "summary": "Experienced software engineer with 8+ years...",
+  "experience": "Senior Software Engineer - Tech Corp (2020-Present)...",
   "education": "M.S. Computer Science - Stanford University (2017)",
-  "skills": ["JavaScript", "Python", "React", "Node.js", "AWS", "Docker"]
+  "skills": ["JavaScript", "Python", "React", "Node.js"],
+  "template": "professional",
+  "accentColor": "#11998e",
+  "showSummary": true,
+  "showExperience": true,
+  "showEducation": true,
+  "showSkills": true
 }
 ```
 
@@ -55,10 +92,31 @@ Your resume data is structured as follows:
 | `jobTitle` | string | Your current or desired job title |
 | `email` | string | Contact email address |
 | `phone` | string | Contact phone number |
-| `summary` | string | Brief professional summary or objective |
-| `experience` | string | Work history (supports line breaks with `\n`) |
+| `summary` | string | Brief professional summary |
+| `experience` | string | Work history (supports line breaks) |
 | `education` | string | Educational background |
-| `skills` | array | List of skills (stored as array of strings) |
+| `skills` | array | List of skills as strings |
+| `template` | string | Template: professional, modern, minimal, creative |
+| `accentColor` | string | Hex color code for accents |
+| `showSummary` | boolean | Whether to display the summary section |
+| `showExperience` | boolean | Whether to display experience section |
+| `showEducation` | boolean | Whether to display education section |
+| `showSkills` | boolean | Whether to display skills section |
+
+## ⌨️ Keyboard Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl+S` (or `Cmd+S`) | Download JSON |
+| `Ctrl+P` (or `Cmd+P`) | Print resume |
+| `Ctrl+E` (or `Cmd+E`) | Export as PDF |
+
+## 🎨 Templates
+
+- **Professional** - Classic, clean layout with elegant accents
+- **Modern** - Contemporary design with bold section headers
+- **Minimal** - Simple, distraction-free format
+- **Creative** - Colorful header with modern styling
 
 ## 🛠️ Local Development
 
@@ -88,6 +146,14 @@ npx serve .
 php -S localhost:8000
 ```
 
+## 📱 PWA Installation
+
+You can install this app on your device:
+
+- **Desktop Chrome**: Click the install icon in the address bar
+- **Mobile Chrome**: Tap "Add to Home Screen" from the menu
+- **Safari (iOS)**: Tap Share → "Add to Home Screen"
+
 ## 📝 License
 
 MIT License - feel free to use, modify, and distribute!
@@ -98,4 +164,4 @@ Made with 💡 by **Lumi** for [@shalkith](https://github.com/shalkith)
 
 ---
 
-*Built with vanilla HTML, CSS, and JavaScript. No frameworks, no dependencies, just clean code!* ✨
+*Built with vanilla HTML, CSS, and JavaScript. Uses html2pdf.js for PDF export.* ✨

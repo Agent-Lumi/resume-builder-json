@@ -7,6 +7,8 @@
     <link rel="manifest" href="manifest.json">
     <script>if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js")</script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- html2pdf.js for PDF export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -354,7 +356,10 @@
                 <button class="btn btn-secondary" onclick="loadExample()">📋 Load Example</button>
                 <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importJSON(event)">
                 <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">📁 Import JSON</button>
-                <button class="btn btn-primary" style="background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%); margin-top: 10px;" onclick="printResume()">🖨️ Print / Save as PDF</button>
+                <div style="margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button class="btn btn-primary" style="background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%); flex: 1; min-width: 140px;" onclick="printResume()">🖨️ Print</button>
+                    <button class="btn btn-primary" style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); flex: 1; min-width: 140px;" onclick="exportToPDF()">📄 Export PDF</button>
+                </div>
             </div>
             
             <div class="preview-panel">
@@ -609,17 +614,18 @@
             setTimeout(() => toast.remove(), 3000);
         }
         
-        // Print resume
+        // Print resume - with improved PDF export
         function printResume() {
             const template = document.getElementById('template').value;
             const accentColor = currentAccentColor;
+            const fullName = document.getElementById('fullName').value || 'Resume';
             const printWindow = window.open('', '_blank');
             const resumeContent = document.getElementById('resumePreview').innerHTML;
             printWindow.document.write(`
                 <!DOCTYPE html>
                 <html>
                 <head>
-                    <title>Resume - Print</title>
+                    <title>Resume - ${fullName}</title>
                     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
                     <style>
                         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -652,6 +658,65 @@
             setTimeout(() => { printWindow.print(); }, 250);
         }
         
+        // NEW: Export as PDF using html2pdf.js
+        function exportToPDF() {
+            const resumePreview = document.getElementById('resumePreview');
+            const fullName = document.getElementById('fullName').value || 'Resume';
+            
+            // Clone the preview for PDF generation
+            const element = resumePreview.cloneNode(true);
+            element.style.width = '210mm';
+            element.style.padding = '20mm';
+            element.style.background = 'white';
+            element.style.position = 'fixed';
+            element.style.left = '-9999px';
+            element.style.top = '0';
+            document.body.appendChild(element);
+            
+            const opt = {
+                margin: [10, 10, 10, 10],
+                filename: `${fullName.replace(/\s+/g, '_')}_Resume.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            
+            html2pdf().set(opt).from(element).save().then(() => {
+                document.body.removeChild(element);
+                showToast('✅ PDF exported successfully!', 'success');
+            }).catch(err => {
+                document.body.removeChild(element);
+                console.error('PDF export error:', err);
+                showToast('❌ PDF export failed. Try Print to PDF instead.', 'error');
+            });
+        }
+        
+        // Export resume preview as image
+        function exportToImage() {
+            const resumePreview = document.getElementById('resumePreview');
+            const fullName = document.getElementById('fullName').value || 'Resume';
+            
+            import('https://html2canvas.hertzen.com/dist/html2canvas.esm.js').catch(() => {
+                // Fallback - use html2pdf's canvas functionality
+                const element = resumePreview.cloneNode(true);
+                element.style.width = '800px';
+                element.style.padding = '40px';
+                element.style.background = 'white';
+                element.style.position = 'fixed';
+                element.style.left = '-9999px';
+                document.body.appendChild(element);
+                
+                html2canvas(element, { scale: 2 }).then(canvas => {
+                    const link = document.createElement('a');
+                    link.download = `${fullName.replace(/\s+/g, '_')}_Resume.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                    document.body.removeChild(element);
+                    showToast('✅ Image exported successfully!', 'success');
+                });
+            });
+        }
+        
         // Theme toggle
         function toggleTheme() {
             document.body.classList.toggle('dark-theme');
@@ -671,6 +736,10 @@
                     case 'p': 
                         e.preventDefault(); 
                         printResume();
+                        break;
+                    case 'e':
+                        e.preventDefault();
+                        exportToPDF();
                         break;
                 }
             }
