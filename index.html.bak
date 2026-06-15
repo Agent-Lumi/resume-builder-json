@@ -235,6 +235,32 @@
         }
         .toast.success { background: #10b981; }
         .toast.error { background: #ef4444; }
+        /* NEW: Template selector styles */
+        select { width: 100%; padding: 10px 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-family: inherit; font-size: 0.95em; background: white; cursor: pointer; transition: border-color 0.2s; }
+        select:focus { outline: none; border-color: #11998e; }
+        /* NEW: Color picker styles */
+        .color-picker { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .color-btn { width: 32px; height: 32px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; transition: all 0.2s; padding: 0; margin: 0; }
+        .color-btn:hover { transform: scale(1.1); }
+        .color-btn.active { border-color: #1f2937; box-shadow: 0 0 0 2px white, 0 0 0 4px #1f2937; }
+        #customColor { width: 32px; height: 32px; border: none; border-radius: 50%; cursor: pointer; padding: 0; overflow: hidden; }
+        /* NEW: Section toggle styles */
+        .toggle-sections { display: flex; flex-wrap: wrap; gap: 12px; }
+        .toggle-checkbox { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.9em; color: #4b5563; }
+        .toggle-checkbox input { cursor: pointer; }
+        /* Template-specific preview styles */
+        .template-modern .resume-header { border-bottom: 3px solid var(--accent-color, #11998e); }
+        .template-modern .resume-section h3 { text-transform: none; letter-spacing: normal; border-bottom: 1px solid var(--accent-color, #11998e); padding-bottom: 5px; }
+        .template-minimal .resume-header { border-bottom: 1px solid #e5e7eb; }
+        .template-minimal .resume-section h3 { color: #1f2937; text-transform: none; letter-spacing: normal; font-weight: 600; }
+        .template-creative .resume-header { background: var(--accent-color, #11998e); color: white; padding: 30px; border-radius: 8px; margin-bottom: 20px; }
+        .template-creative .resume-header h1 { color: white; }
+        .template-creative .resume-header p { color: rgba(255,255,255,0.9); }
+        .template-creative .resume-section h3 { color: var(--accent-color, #11998e); background: rgba(17,153,142,0.1); padding: 8px 12px; border-radius: 4px; }
+        /* Dark mode for new elements */
+        body.dark-theme select { background: #1a202c; border-color: #4a5568; color: #e2e8f0; }
+        body.dark-theme .color-btn.active { border-color: #e2e8f0; box-shadow: 0 0 0 2px #1a202c, 0 0 0 4px #e2e8f0; }
+        body.dark-theme .toggle-checkbox { color: #a0aec0; }
     </style>
 </head>
 <body>
@@ -288,6 +314,42 @@
                     <input type="text" id="skills" placeholder="JavaScript, Python, React, Node.js" oninput="updateResume()">
                 </div>
                 
+                <!-- NEW: Template Selector -->
+                <div class="form-group">
+                    <label>Resume Template</label>
+                    <select id="template" onchange="updateResume()">
+                        <option value="professional">👔 Professional (Classic)</option>
+                        <option value="modern">✨ Modern (Clean)</option>
+                        <option value="minimal">📄 Minimal (Simple)</option>
+                        <option value="creative">🎨 Creative (Colorful)</option>
+                    </select>
+                </div>
+                
+                <!-- NEW: Custom Accent Color -->
+                <div class="form-group">
+                    <label>Accent Color</label>
+                    <div class="color-picker">
+                        <button type="button" class="color-btn active" data-color="#11998e" style="background: #11998e;" onclick="setAccentColor('#11998e')"></button>
+                        <button type="button" class="color-btn" data-color="#6366f1" style="background: #6366f1;" onclick="setAccentColor('#6366f1')"></button>
+                        <button type="button" class="color-btn" data-color="#ec4899" style="background: #ec4899;" onclick="setAccentColor('#ec4899')"></button>
+                        <button type="button" class="color-btn" data-color="#f59e0b" style="background: #f59e0b;" onclick="setAccentColor('#f59e0b')"></button>
+                        <button type="button" class="color-btn" data-color="#3b82f6" style="background: #3b82f6;" onclick="setAccentColor('#3b82f6')"></button>
+                        <button type="button" class="color-btn" data-color="#10b981" style="background: #10b981;" onclick="setAccentColor('#10b981')"></button>
+                        <input type="color" id="customColor" value="#11998e" onchange="setAccentColor(this.value)" title="Custom color">
+                    </div>
+                </div>
+                
+                <!-- NEW: Section Toggles -->
+                <div class="form-group">
+                    <label>Show Sections</label>
+                    <div class="toggle-sections">
+                        <label class="toggle-checkbox"><input type="checkbox" id="showSummary" checked onchange="updateResume()"> Summary</label>
+                        <label class="toggle-checkbox"><input type="checkbox" id="showExperience" checked onchange="updateResume()"> Experience</label>
+                        <label class="toggle-checkbox"><input type="checkbox" id="showEducation" checked onchange="updateResume()"> Education</label>
+                        <label class="toggle-checkbox"><input type="checkbox" id="showSkills" checked onchange="updateResume()"> Skills</label>
+                    </div>
+                </div>
+                
                 <button class="btn btn-primary" onclick="downloadJSON()">💾 Download JSON</button>
                 <button class="btn btn-secondary" onclick="loadExample()">📋 Load Example</button>
                 <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importJSON(event)">
@@ -320,13 +382,19 @@
     </div>
     
     <script>
+        // Global accent color
+        let currentAccentColor = localStorage.getItem('accentColor') || '#11998e';
+
         // Load saved data on page load
         document.addEventListener('DOMContentLoaded', () => {
             loadSavedData();
+            loadTemplateSettings();
             if (localStorage.getItem('darkTheme') === 'true') {
                 document.body.classList.add('dark-theme');
                 document.getElementById('themeBtn').textContent = '☀️ Toggle Light Mode';
             }
+            // Apply saved accent color
+            setAccentColor(currentAccentColor, false);
         });
         
         function updateResume() {
@@ -338,8 +406,17 @@
                 summary: document.getElementById('summary').value,
                 experience: document.getElementById('experience').value,
                 education: document.getElementById('education').value,
-                skills: document.getElementById('skills').value.split(',').map(s => s.trim()).filter(s => s)
+                skills: document.getElementById('skills').value.split(',').map(s => s.trim()).filter(s => s),
+                template: document.getElementById('template').value,
+                accentColor: currentAccentColor,
+                showSummary: document.getElementById('showSummary').checked,
+                showExperience: document.getElementById('showExperience').checked,
+                showEducation: document.getElementById('showEducation').checked,
+                showSkills: document.getElementById('showSkills').checked
             };
+            
+            const template = data.template || 'professional';
+            const previewEl = document.getElementById('resumePreview');
             
             // Update preview
             let previewHTML = '';
@@ -357,7 +434,7 @@
                 `;
             }
             
-            if (data.summary) {
+            if (data.summary && data.showSummary) {
                 previewHTML += `
                     <div class="resume-section">
                         <h3>Summary</h3>
@@ -366,7 +443,7 @@
                 `;
             }
             
-            if (data.experience) {
+            if (data.experience && data.showExperience) {
                 previewHTML += `
                     <div class="resume-section">
                         <h3>Experience</h3>
@@ -375,7 +452,7 @@
                 `;
             }
             
-            if (data.education) {
+            if (data.education && data.showEducation) {
                 previewHTML += `
                     <div class="resume-section">
                         <h3>Education</h3>
@@ -384,7 +461,7 @@
                 `;
             }
             
-            if (data.skills.length > 0) {
+            if (data.skills.length > 0 && data.showSkills) {
                 previewHTML += `
                     <div class="resume-section">
                         <h3>Skills</h3>
@@ -394,7 +471,9 @@
             }
             
             if (previewHTML) {
-                document.getElementById('resumePreview').innerHTML = previewHTML;
+                previewEl.innerHTML = previewHTML;
+                previewEl.className = `resume-preview template-${template}`;
+                previewEl.style.setProperty('--accent-color', data.accentColor);
             }
             
             // Update JSON output
@@ -420,6 +499,33 @@
             }
         }
         
+        function loadTemplateSettings() {
+            const saved = localStorage.getItem('resume-data');
+            if (saved) {
+                const data = JSON.parse(saved);
+                if (data.template) document.getElementById('template').value = data.template;
+                if (data.showSummary !== undefined) document.getElementById('showSummary').checked = data.showSummary;
+                if (data.showExperience !== undefined) document.getElementById('showExperience').checked = data.showExperience;
+                if (data.showEducation !== undefined) document.getElementById('showEducation').checked = data.showEducation;
+                if (data.showSkills !== undefined) document.getElementById('showSkills').checked = data.showSkills;
+                if (data.accentColor) currentAccentColor = data.accentColor;
+            }
+        }
+        
+        function setAccentColor(color, update = true) {
+            currentAccentColor = color;
+            localStorage.setItem('accentColor', color);
+            document.getElementById('customColor').value = color;
+            
+            // Update active button
+            document.querySelectorAll('.color-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.color === color) btn.classList.add('active');
+            });
+            
+            if (update) updateResume();
+        }
+        
         function downloadJSON() {
             const data = {
                 fullName: document.getElementById('fullName').value,
@@ -429,7 +535,13 @@
                 summary: document.getElementById('summary').value,
                 experience: document.getElementById('experience').value,
                 education: document.getElementById('education').value,
-                skills: document.getElementById('skills').value.split(',').map(s => s.trim()).filter(s => s)
+                skills: document.getElementById('skills').value.split(',').map(s => s.trim()).filter(s => s),
+                template: document.getElementById('template').value,
+                accentColor: currentAccentColor,
+                showSummary: document.getElementById('showSummary').checked,
+                showExperience: document.getElementById('showExperience').checked,
+                showEducation: document.getElementById('showEducation').checked,
+                showSkills: document.getElementById('showSkills').checked
             };
             
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -473,6 +585,12 @@
                     document.getElementById('experience').value = data.experience || '';
                     document.getElementById('education').value = data.education || '';
                     document.getElementById('skills').value = Array.isArray(data.skills) ? data.skills.join(', ') : data.skills || '';
+                    if (data.template) document.getElementById('template').value = data.template;
+                    if (data.accentColor) setAccentColor(data.accentColor, false);
+                    if (data.showSummary !== undefined) document.getElementById('showSummary').checked = data.showSummary;
+                    if (data.showExperience !== undefined) document.getElementById('showExperience').checked = data.showExperience;
+                    if (data.showEducation !== undefined) document.getElementById('showEducation').checked = data.showEducation;
+                    if (data.showSkills !== undefined) document.getElementById('showSkills').checked = data.showSkills;
                     updateResume();
                     showToast('✅ Resume imported successfully!', 'success');
                 } catch (err) {
@@ -493,6 +611,8 @@
         
         // Print resume
         function printResume() {
+            const template = document.getElementById('template').value;
+            const accentColor = currentAccentColor;
             const printWindow = window.open('', '_blank');
             const resumeContent = document.getElementById('resumePreview').innerHTML;
             printWindow.document.write(`
@@ -504,25 +624,32 @@
                     <style>
                         * { margin: 0; padding: 0; box-sizing: border-box; }
                         body { font-family: 'Inter', sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; }
-                        .resume-header { text-align: center; padding-bottom: 20px; border-bottom: 2px solid #11998e; margin-bottom: 20px; }
+                        .resume-header { text-align: center; padding-bottom: 20px; border-bottom: 2px solid ${accentColor}; margin-bottom: 20px; }
                         .resume-header h1 { font-size: 1.8em; color: #1f2937; margin-bottom: 5px; }
                         .resume-header p { color: #6b7280; }
                         .resume-section { margin-bottom: 20px; }
-                        .resume-section h3 { color: #11998e; font-size: 1.1em; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
+                        .resume-section h3 { color: ${accentColor}; font-size: 1.1em; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
                         .resume-section p { color: #4b5563; line-height: 1.6; margin-bottom: 8px; }
+                        /* Template styles for print */
+                        .template-modern .resume-header { border-bottom: 3px solid ${accentColor}; }
+                        .template-modern .resume-section h3 { text-transform: none; letter-spacing: normal; border-bottom: 1px solid ${accentColor}; padding-bottom: 5px; }
+                        .template-minimal .resume-header { border-bottom: 1px solid #e5e7eb; }
+                        .template-minimal .resume-section h3 { color: #1f2937; text-transform: none; letter-spacing: normal; font-weight: 600; }
+                        .template-creative .resume-header { background: ${accentColor}; color: white; padding: 30px; border-radius: 8px; margin-bottom: 20px; }
+                        .template-creative .resume-header h1 { color: white; }
+                        .template-creative .resume-header p { color: rgba(255,255,255,0.9); }
+                        .template-creative .resume-section h3 { color: ${accentColor}; background: rgba(17,153,142,0.1); padding: 8px 12px; border-radius: 4px; }
                         @media print { body { padding: 0; } }
                     </style>
                 </head>
-                <body>
+                <body class="template-${template}">
                     ${resumeContent}
                 </body>
                 </html>
             `);
             printWindow.document.close();
             printWindow.focus();
-            setTimeout(() => {
-                printWindow.print();
-            }, 250);
+            setTimeout(() => { printWindow.print(); }, 250);
         }
         
         // Theme toggle
@@ -559,3 +686,278 @@
     </script>
 </body>
 </html>
+
+<!-- Interactive Tutorial Feature -->
+<div id="tutorial-overlay" class="tutorial-overlay hidden">
+    <div class="tutorial-spotlight"></div>
+    <div class="tutorial-tooltip" id="tutorial-tooltip">
+        <div class="tutorial-content">
+            <h3 id="tutorial-title">Welcome!</h3>
+            <p id="tutorial-text">Let's take a quick tour.</p>
+            <div class="tutorial-progress">
+                <span id="tutorial-step">1</span> / <span id="tutorial-total">5</span>
+            </div>
+        </div>
+        <div class="tutorial-actions">
+            <button id="tutorial-prev" class="tutorial-btn secondary">← Back</button>
+            <button id="tutorial-next" class="tutorial-btn primary">Next →</button>
+            <button id="tutorial-skip" class="tutorial-btn text">Skip Tour</button>
+        </div>
+    </div>
+</div>
+
+<style>
+.tutorial-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10000;
+    background: rgba(0,0,0,0.7);
+    transition: opacity 0.3s;
+}
+.tutorial-overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+.tutorial-spotlight {
+    position: absolute;
+    border-radius: 8px;
+    box-shadow: 0 0 0 9999px rgba(0,0,0,0.7);
+    transition: all 0.3s ease;
+    pointer-events: none;
+}
+.tutorial-tooltip {
+    position: absolute;
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    max-width: 320px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    z-index: 10001;
+    transition: all 0.3s ease;
+}
+.tutorial-tooltip h3 {
+    margin: 0 0 10px 0;
+    color: #11998e;
+    font-size: 1.2em;
+}
+.tutorial-tooltip p {
+    margin: 0 0 15px 0;
+    color: #4b5563;
+    line-height: 1.5;
+}
+.tutorial-progress {
+    font-size: 0.85em;
+    color: #9ca3af;
+    margin-bottom: 15px;
+}
+.tutorial-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.tutorial-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: all 0.2s;
+}
+.tutorial-btn.primary {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    color: white;
+}
+.tutorial-btn.secondary {
+    background: #f3f4f6;
+    color: #4b5563;
+}
+.tutorial-btn.text {
+    background: transparent;
+    color: #9ca3af;
+    text-decoration: underline;
+}
+.tutorial-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.tutorial-launch-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    color: white;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(17,153,142,0.4);
+    transition: all 0.2s;
+    z-index: 9999;
+}
+.tutorial-launch-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(17,153,142,0.5);
+}
+.dark-theme .tutorial-tooltip {
+    background: #1f2937;
+    color: #e5e7eb;
+}
+.dark-theme .tutorial-tooltip p {
+    color: #9ca3af;
+}
+.dark-theme .tutorial-btn.secondary {
+    background: #374151;
+    color: #e5e7eb;
+}
+</style>
+
+<script>
+// Interactive Tutorial System
+(function() {
+    const tutorialSteps = [
+        {
+            element: 'header h1',
+            title: '👋 Welcome to Resume Builder!',
+            text: 'Create beautiful, professional resumes from JSON. Let\'s show you around.',
+            position: 'bottom'
+        },
+        {
+            element: '.editor-panel',
+            title: '📝 Edit Your Information',
+            text: 'Fill in your details here. The preview updates automatically as you type.',
+            position: 'right'
+        },
+        {
+            element: '.preview-panel',
+            title: '👁️ Live Preview',
+            text: 'See how your resume looks in real-time. It updates instantly!',
+            position: 'left'
+        },
+        {
+            element: '.btn-primary',
+            title: '💾 Save & Export',
+            text: 'Save your work or export as JSON to use later. Your data is stored locally.',
+            position: 'top'
+        },
+        {
+            element: '.json-output',
+            title: '📋 JSON Output',
+            text: 'Copy this JSON to share your resume or import it later. You\'re all set!',
+            position: 'top'
+        }
+    ];
+    
+    let currentStep = 0;
+    let isActive = false;
+    
+    const overlay = document.getElementById('tutorial-overlay');
+    const spotlight = overlay.querySelector('.tutorial-spotlight');
+    const tooltip = document.getElementById('tutorial-tooltip');
+    const titleEl = document.getElementById('tutorial-title');
+    const textEl = document.getElementById('tutorial-text');
+    const stepEl = document.getElementById('tutorial-step');
+    const totalEl = document.getElementById('tutorial-total');
+    
+    function updateSpotlight(element) {
+        const el = document.querySelector(element);
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
+        spotlight.style.top = (rect.top - 8) + 'px';
+        spotlight.style.left = (rect.left - 8) + 'px';
+        spotlight.style.width = (rect.width + 16) + 'px';
+        spotlight.style.height = (rect.height + 16) + 'px';
+    }
+    
+    function updateTooltip(step) {
+        const el = document.querySelector(step.element);
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
+        
+        titleEl.textContent = step.title;
+        textEl.textContent = step.text;
+        stepEl.textContent = currentStep + 1;
+        totalEl.textContent = tutorialSteps.length;
+        
+        // Position tooltip
+        let top = rect.bottom + 20;
+        let left = rect.left + rect.width / 2 - 160;
+        
+        if (step.position === 'top') {
+            top = rect.top - tooltip.offsetHeight - 20;
+        } else if (step.position === 'left') {
+            left = rect.left - tooltip.offsetWidth - 20;
+            top = rect.top + rect.height / 2 - tooltip.offsetHeight / 2;
+        } else if (step.position === 'right') {
+            left = rect.right + 20;
+            top = rect.top + rect.height / 2 - tooltip.offsetHeight / 2;
+        }
+        
+        // Keep in viewport
+        left = Math.max(10, Math.min(left, window.innerWidth - tooltip.offsetWidth - 10));
+        top = Math.max(10, Math.min(top, window.innerHeight - tooltip.offsetHeight - 10));
+        
+        tooltip.style.top = top + 'px';
+        tooltip.style.left = left + 'px';
+    }
+    
+    function showStep(index) {
+        if (index < 0 || index >= tutorialSteps.length) return;
+        currentStep = index;
+        updateSpotlight(tutorialSteps[index].element);
+        updateTooltip(tutorialSteps[index]);
+        
+        document.getElementById('tutorial-prev').style.display = index === 0 ? 'none' : 'inline-block';
+        document.getElementById('tutorial-next').textContent = index === tutorialSteps.length - 1 ? 'Finish 🎉' : 'Next →';
+    }
+    
+    function startTutorial() {
+        isActive = true;
+        overlay.classList.remove('hidden');
+        showStep(0);
+    }
+    
+    function endTutorial() {
+        isActive = false;
+        overlay.classList.add('hidden');
+        localStorage.setItem('tutorial-completed', 'true');
+    }
+    
+    // Event listeners
+    document.getElementById('tutorial-next').addEventListener('click', () => {
+        if (currentStep < tutorialSteps.length - 1) {
+            showStep(currentStep + 1);
+        } else {
+            endTutorial();
+        }
+    });
+    
+    document.getElementById('tutorial-prev').addEventListener('click', () => {
+        if (currentStep > 0) showStep(currentStep - 1);
+    });
+    
+    document.getElementById('tutorial-skip').addEventListener('click', endTutorial);
+    
+    // Create launch button
+    const launchBtn = document.createElement('button');
+    launchBtn.className = 'tutorial-launch-btn';
+    launchBtn.innerHTML = '❓';
+    launchBtn.title = 'Start Tutorial';
+    launchBtn.onclick = startTutorial;
+    document.body.appendChild(launchBtn);
+    
+    // Auto-start on first visit
+    if (!localStorage.getItem('tutorial-completed')) {
+        setTimeout(startTutorial, 1000);
+    }
+    
+    // Update on resize
+    window.addEventListener('resize', () => {
+        if (isActive) showStep(currentStep);
+    });
+})();
+</script>
